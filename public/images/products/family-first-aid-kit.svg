@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="600" viewBox="0 0 600 600">
+  <rect width="600" height="600" fill="#dcf3e4"/>
+  <circle cx="300" cy="180" r="70" fill="#8ed2aa" opacity="0.5"/>
+  <rect x="270" y="150" width="60" height="16" rx="8" fill="#1c4d35"/>
+  <rect x="292" y="128" width="16" height="60" rx="8" fill="#1c4d35"/>
+  <text x="300" y="300.0" text-anchor="middle" font-family="Arial, sans-serif" font-size="32" font-weight="700" fill="#1c4d35">First Aid Kit</text>
+  <text x="300" y="560" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#1c4d35" opacity="0.6">Demo product image</text>
+</svg>

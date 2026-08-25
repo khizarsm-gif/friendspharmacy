@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="680" viewBox="0 0 900 680">
+  <rect width="900" height="680" fill="#dcf3e4"/>
+  <circle cx="450.0" cy="258.4" r="110" fill="#8ed2aa" opacity="0.5"/>
+  <rect x="405.0" y="236.39999999999998" width="90" height="24" rx="12" fill="#1c4d35"/>
+  <rect x="438.0" y="203.39999999999998" width="24" height="90" rx="12" fill="#1c4d35"/>
+  <text x="450.0" y="489.59999999999997" text-anchor="middle" font-family="Arial, sans-serif" font-size="34" font-weight="700" fill="#1c4d35">Friends Pharmacy</text>
+  <text x="450.0" y="523.5999999999999" text-anchor="middle" font-family="Arial, sans-serif" font-size="16" fill="#1c4d35" opacity="0.6">Demo banner image</text>
+</svg>
