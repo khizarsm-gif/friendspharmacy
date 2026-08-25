@@ -12,6 +12,10 @@ import { cookies } from "next/headers";
  *
  * Only used by the /admin section — the public storefront never needs a
  * logged-in session.
+ *
+ * Named lib/supabase-server.ts (not lib/supabase/server.ts) deliberately —
+ * a lib/supabase/ folder next to the existing lib/supabase.ts file caused a
+ * "Module not found: Can't resolve '@/lib/supabase'" build failure.
  */
 export async function createClient() {
   const cookieStore = await cookies();
