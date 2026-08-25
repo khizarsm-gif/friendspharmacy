@@ -23,31 +23,32 @@ export const businessConfig = {
   country: "Pakistan",
 
   // --- Contact information -------------------------------------------------
-  phone: "+92 XXX XXXXXXX",
+  phone: "+92 304 0286986",
   // Raw digits only (no +, spaces, or dashes) — used to build tel:/wa.me links.
-  phoneRaw: "92XXXXXXXXXX",
-  whatsapp: "+92 XXX XXXXXXX",
+  phoneRaw: "923040286986",
+  whatsapp: "+92 304 0286986",
   // Raw digits only, international format, no leading + — required by wa.me links.
-  whatsappRaw: "92XXXXXXXXXX",
+  whatsappRaw: "923040286986",
+  // TODO: placeholder — you didn't provide a real email yet; update when ready.
   email: "info@example.com",
 
   // --- Location --------------------------------------------------------------
-  address: "Your Pharmacy Address, Lahore, Pakistan",
+  address: "03 Tulip Overseas Commercial, Park View City, Lahore, Pakistan",
   // Optional: paste a Google Maps embed src URL here once you have a real address.
   googleMapsEmbedUrl: "",
-  googleMapsDirectionsUrl: "https://maps.google.com/?q=Friends+Pharmacy+Lahore",
+  googleMapsDirectionsUrl: "https://share.google/BwRsqK1RLApC05GVi",
 
   // --- Hours -------------------------------------------------------------
-  openingHours: "Monday – Sunday: 9:00 AM – 11:00 PM",
+  openingHours: "Monday – Sunday: 8:00 AM – 2:00 AM",
   openingHoursDetailed: [
-    { days: "Monday – Sunday", hours: "9:00 AM – 11:00 PM" },
+    { days: "Monday – Sunday", hours: "8:00 AM – 2:00 AM" },
   ],
 
   // --- Commerce ------------------------------------------------------------
   currency: "PKR",
   currencySymbol: "PKR",
-  deliveryFee: 150,
-  freeDeliveryThreshold: 3000,
+  deliveryFee: 50,
+  freeDeliveryThreshold: 1000,
 
   // --- Social links (leave blank string to hide an icon in the footer) ----
   social: {
