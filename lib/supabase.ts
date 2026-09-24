@@ -1,20 +1,26 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
+/** Cache tag for every public catalog read. Admin writes call revalidateTag(CATALOG_TAG). */
+export const CATALOG_TAG = "catalog";
+
 let cachedClient: SupabaseClient | null = null;
 
 /**
- * Shared Supabase client for the public product catalog.
+ * Shared Supabase client for the public product catalog (read-only).
  *
- * Safe to call from Server Components, Client Components, and route
- * handlers alike — it uses the publishable ("anon") key, which is designed
- * to be exposed to the browser. Read access is scoped by the Row Level
- * Security policies created in the products/categories migration (public
- * read-only; no insert/update/delete for this key). A future admin
- * dashboard would use the separate service role key, kept server-only, for
- * writes.
+ * Uses the publishable ("anon") key, which is safe to expose; Row Level
+ * Security only allows SELECT for this key. All writes happen in the admin
+ * portal through the session-aware client in lib/supabase-server.ts and are
+ * limited to accounts listed in the `admin_users` table.
  *
- * Requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY to be
- * set (see .env.local.example).
+ * On the server, every request is tagged with CATALOG_TAG and cached for up
+ * to 5 minutes, so the storefront stays fast. When an admin saves a product
+ * or category, the admin actions purge the tag and the change shows up
+ * immediately.
+ *
+ * Requires NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY
+ * (locally in .env.local, and in Vercel -> Project -> Settings ->
+ * Environment Variables for production).
  */
 export function getSupabaseClient(): SupabaseClient {
   if (cachedClient) return cachedClient;
@@ -25,13 +31,21 @@ export function getSupabaseClient(): SupabaseClient {
   if (!url || !key) {
     throw new Error(
       "Missing Supabase environment variables. Set NEXT_PUBLIC_SUPABASE_URL and " +
-        "NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local (see .env.local.example), and " +
-        "in your Vercel project's Environment Variables settings for production."
+        "NEXT_PUBLIC_SUPABASE_ANON_KEY in .env.local, and in your Vercel project's " +
+        "Environment Variables settings for production."
     );
   }
 
   cachedClient = createClient(url, key, {
     auth: { persistSession: false },
+    global: {
+      // `next` is a Next.js fetch extension; browsers ignore it.
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, {
+          ...init,
+          next: { revalidate: 300, tags: [CATALOG_TAG] },
+        } as RequestInit),
+    },
   });
   return cachedClient;
 }

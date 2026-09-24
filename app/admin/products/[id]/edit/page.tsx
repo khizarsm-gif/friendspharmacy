@@ -1,24 +1,36 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
-import { categories } from "@/data/categories";
-import { getProductById } from "@/data/products";
+import { ExternalLink } from "lucide-react";
+import { requireAdminPage } from "@/lib/admin-auth";
+import { adminGetProduct, adminListCategories } from "@/lib/admin-data";
+import PageHeader from "../../../_components/PageHeader";
 import ProductForm from "../../ProductForm";
 
 export const dynamic = "force-dynamic";
 
-interface EditProductPageProps {
-  params: { id: string };
-}
-
-export default async function EditProductPage({ params }: EditProductPageProps) {
+export default async function EditProductPage({ params }: { params: { id: string } }) {
   const id = Number(params.id);
-  if (!Number.isFinite(id)) notFound();
+  if (!Number.isInteger(id)) notFound();
 
-  const product = await getProductById(id);
+  const supabase = await requireAdminPage();
+  const [product, categories] = await Promise.all([
+    adminGetProduct(supabase, id),
+    adminListCategories(supabase),
+  ]);
   if (!product) notFound();
 
   return (
     <div>
-      <h1 className="mb-6 text-2xl font-bold text-gray-900">Edit Product</h1>
+      <PageHeader
+        title="Edit product"
+        description={product.name}
+        actions={
+          <Link href={`/products/${product.slug}`} target="_blank" className="btn-secondary !py-2.5">
+            <ExternalLink className="h-4 w-4" aria-hidden="true" />
+            View on store
+          </Link>
+        }
+      />
       <ProductForm categories={categories} mode="edit" product={product} />
     </div>
   );

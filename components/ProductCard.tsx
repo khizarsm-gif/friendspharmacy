@@ -8,18 +8,19 @@ import { formatPrice, isOnSale, calculateDiscountPercent } from "@/lib/utils";
 import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
 import { useToast } from "@/lib/toast-context";
-import { getCategoryBySlug } from "@/data/categories";
+import { useCatalog } from "@/lib/catalog-context";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { showToast } = useToast();
+  const { getCategory } = useCatalog();
 
   const onSale = isOnSale(product.price, product.salePrice);
   const discount = calculateDiscountPercent(product.price, product.salePrice);
   const outOfStock = product.stock <= 0;
   const lowStock = !outOfStock && product.stock <= 10;
-  const category = getCategoryBySlug(product.category);
+  const category = getCategory(product.category);
   const wishlisted = isWishlisted(product.id);
 
   const handleAddToCart = () => {

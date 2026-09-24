@@ -5,8 +5,8 @@ import Hero from "@/components/Hero";
 import TrustBadges from "@/components/TrustBadges";
 import CategoryCard from "@/components/CategoryCard";
 import ProductGrid from "@/components/ProductGrid";
-import { categories } from "@/data/categories";
-import { getFeaturedProducts } from "@/data/products";
+import { getCategories } from "@/data/categories";
+import { getAllProducts } from "@/data/products";
 import { businessConfig } from "@/config/business";
 
 export const metadata: Metadata = {
@@ -15,8 +15,28 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default function HomePage() {
-  const featuredProducts = getFeaturedProducts();
+// Rebuild the cached homepage at most every 5 minutes (admin saves refresh it instantly).
+export const revalidate = 300;
+
+async function loadHomeData() {
+  try {
+    const [allProducts, categories] = await Promise.all([getAllProducts(), getCategories()]);
+    return { allProducts, categories };
+  } catch (err) {
+    // Don't fail the build/page if Supabase is briefly unreachable.
+    console.error("[home] Failed to load catalog:", err);
+    return { allProducts: [], categories: [] };
+  }
+}
+
+export default async function HomePage() {
+  const { allProducts, categories } = await loadHomeData();
+  const featuredProducts = allProducts.filter((p) => p.featured);
+  const hasDemoProducts = featuredProducts.some((p) => p.isDemo);
+  const countByCategory = allProducts.reduce<Record<string, number>>((acc, p) => {
+    acc[p.category] = (acc[p.category] ?? 0) + 1;
+    return acc;
+  }, {});
 
   return (
     <>
@@ -43,7 +63,11 @@ export default function HomePage() {
         </div>
         <div className="grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-4">
           {categories.map((category) => (
-            <CategoryCard key={category.slug} category={category} />
+            <CategoryCard
+              key={category.slug}
+              category={category}
+              count={countByCategory[category.slug] ?? 0}
+            />
           ))}
         </div>
       </section>
@@ -56,10 +80,12 @@ export default function HomePage() {
                 Featured Products
               </h2>
               <p className="mt-1 text-sm text-gray-500">
-                Popular picks from our shelves.{" "}
-                <span className="font-medium text-brand-700">
-                  (Demo products — replace with real inventory)
-                </span>
+                Popular picks from our shelves.
+                {hasDemoProducts && (
+                  <span className="font-medium text-brand-700">
+                    {" "}(Demo products, replace with real inventory)
+                  </span>
+                )}
               </p>
             </div>
             <Link

@@ -7,7 +7,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductGrid from "@/components/ProductGrid";
 import ProductFilters, { type FiltersState } from "@/components/ProductFilters";
 import SearchBar from "@/components/SearchBar";
-import { getAllProducts } from "@/data/products";
+import { useCatalog } from "@/lib/catalog-context";
 import { effectivePrice } from "@/lib/utils";
 import type { CategorySlug } from "@/types";
 
@@ -18,9 +18,9 @@ export default function ShopClient() {
   const initialCategory = (searchParams.get("category") as CategorySlug | null) || "all";
   const initialQuery = searchParams.get("q") || "";
 
-  const allProducts = getAllProducts();
+  const { products: allProducts } = useCatalog();
   const priceCeiling = useMemo(
-    () => Math.ceil(Math.max(...allProducts.map((p) => p.price)) / 50) * 50,
+    () => Math.max(50, Math.ceil(Math.max(0, ...allProducts.map((p) => p.price)) / 50) * 50),
     [allProducts]
   );
 

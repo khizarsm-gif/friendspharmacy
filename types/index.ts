@@ -30,21 +30,18 @@ export interface Product {
   isDemo: boolean;
 }
 
-export type CategorySlug =
-  | "medicines"
-  | "vitamins-supplements"
-  | "personal-care"
-  | "baby-care"
-  | "beauty-skincare"
-  | "medical-devices"
-  | "first-aid"
-  | "health-wellness";
+/**
+ * Category slugs are managed in the admin portal (Supabase `categories`
+ * table), so they are plain strings rather than a fixed union.
+ */
+export type CategorySlug = string;
 
 export interface Category {
   slug: CategorySlug;
   name: string;
-  icon: string; // lucide-react icon name, resolved in CategoryCard
+  icon: string; // icon key from lib/category-icons.tsx
   description: string;
+  sortOrder: number;
 }
 
 export interface CartItem {

@@ -6,7 +6,11 @@ import CartDrawer from "@/components/CartDrawer";
 import WhatsAppButton from "@/components/WhatsAppButton";
 import BackToTop from "@/components/BackToTop";
 import Providers from "@/components/Providers";
+import SiteChrome from "@/components/SiteChrome";
 import { businessConfig } from "@/config/business";
+import { getAllProducts } from "@/data/products";
+import { getCategories } from "@/data/categories";
+import type { Category, Product } from "@/types";
 
 const siteUrl = "https://friendspharmacy.example.com";
 
@@ -39,27 +43,43 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+/**
+ * Loads the catalog once per render (cached, see lib/supabase.ts) for client
+ * components like search and the cart. If Supabase is unreachable the site
+ * still renders with an empty catalog instead of crashing.
+ */
+async function loadCatalog(): Promise<{ products: Product[]; categories: Category[] }> {
+  try {
+    const [products, categories] = await Promise.all([getAllProducts(), getCategories()]);
+    return { products, categories };
+  } catch (err) {
+    console.error("[layout] Failed to load catalog from Supabase:", err);
+    return { products: [], categories: [] };
+  }
+}
+
+export default async function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
+  const { products, categories } = await loadCatalog();
+
   return (
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-white font-sans text-gray-900">
-        <Providers>
-          <a
-            href="#main-content"
-            className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[100] focus:rounded-lg focus:bg-brand-700 focus:px-4 focus:py-2 focus:text-white"
+        <Providers products={products} categories={categories}>
+          <SiteChrome
+            header={<Navbar />}
+            footer={
+              <>
+                <Footer categories={categories} />
+                <CartDrawer />
+                <WhatsAppButton variant="floating" />
+                <BackToTop />
+              </>
+            }
           >
-            Skip to main content
-          </a>
-          <Navbar />
-          <main id="main-content" className="flex-1">
             {children}
-          </main>
-          <Footer />
-          <CartDrawer />
-          <WhatsAppButton variant="floating" />
-          <BackToTop />
+          </SiteChrome>
         </Providers>
       </body>
     </html>

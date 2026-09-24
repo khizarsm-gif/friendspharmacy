@@ -4,9 +4,9 @@ import { NextResponse, type NextRequest } from "next/server";
 /**
  * Protects the /admin section. Any request under /admin (other than the
  * login page itself) without a valid Supabase session is redirected to
- * /admin/login. This is the first line of defense; the real enforcement is
- * the "authenticated" Row Level Security policies in Supabase, which reject
- * writes even if this check were somehow bypassed.
+ * /admin/login. The admin layout then checks the `admin_users` allowlist,
+ * and Supabase Row Level Security (is_admin()) rejects writes from anyone
+ * else even if both checks were bypassed.
  */
 export async function middleware(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -43,9 +43,9 @@ export async function middleware(request: NextRequest) {
   }
 
   if (user && isLoginPage) {
-    const productsUrl = request.nextUrl.clone();
-    productsUrl.pathname = "/admin/products";
-    return NextResponse.redirect(productsUrl);
+    const dashboardUrl = request.nextUrl.clone();
+    dashboardUrl.pathname = "/admin";
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return response;

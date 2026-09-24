@@ -3,7 +3,7 @@ import { getAllProducts } from "@/data/products";
 
 const siteUrl = "https://friendspharmacy.example.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const staticRoutes = [
     "",
     "/shop",
@@ -18,10 +18,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
     lastModified: new Date(),
   }));
 
-  const productRoutes = getAllProducts().map((product) => ({
-    url: `${siteUrl}/products/${product.slug}`,
-    lastModified: new Date(product.createdAt),
-  }));
+  let productRoutes: MetadataRoute.Sitemap = [];
+  try {
+    productRoutes = (await getAllProducts()).map((product) => ({
+      url: `${siteUrl}/products/${product.slug}`,
+      lastModified: new Date(product.createdAt),
+    }));
+  } catch (err) {
+    console.error("[sitemap] Failed to load products:", err);
+  }
 
   return [...staticRoutes, ...productRoutes];
 }

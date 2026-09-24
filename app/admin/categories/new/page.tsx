@@ -1,18 +1,19 @@
 import { requireAdminPage } from "@/lib/admin-auth";
 import { adminListCategories } from "@/lib/admin-data";
 import PageHeader from "../../_components/PageHeader";
-import ProductForm from "../ProductForm";
+import CategoryForm from "../CategoryForm";
 
 export const dynamic = "force-dynamic";
 
-export default async function NewProductPage() {
+export default async function NewCategoryPage() {
   const supabase = await requireAdminPage();
   const categories = await adminListCategories(supabase);
+  const nextSortOrder = Math.max(0, ...categories.map((c) => c.sortOrder)) + 1;
 
   return (
     <div>
-      <PageHeader title="Add product" description="New products appear on the store as soon as you save." />
-      <ProductForm categories={categories} mode="create" />
+      <PageHeader title="Add category" />
+      <CategoryForm nextSortOrder={nextSortOrder} />
     </div>
   );
 }

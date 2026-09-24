@@ -9,7 +9,7 @@ import {
   useState,
 } from "react";
 import { businessConfig } from "@/config/business";
-import { getProductBySlug, products } from "@/data/products";
+import { useCatalog } from "@/lib/catalog-context";
 import { effectivePrice } from "@/lib/utils";
 import type { CartItem, Product } from "@/types";
 
@@ -59,6 +59,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const { getProductById } = useCatalog();
 
   // Load persisted cart on mount (client-only — localStorage isn't available
   // during server rendering).
@@ -105,13 +106,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () =>
       items
         .map((item) => {
-          const product =
-            products.find((p) => p.id === item.productId) ||
-            getProductBySlug(String(item.productId));
+          // Items whose product was deleted in the admin are dropped here.
+          const product = getProductById(item.productId);
           return product ? { product, quantity: item.quantity } : null;
         })
         .filter((line): line is CartLine => Boolean(line)),
-    [items]
+    [items, getProductById]
   );
 
   const itemCount = useMemo(

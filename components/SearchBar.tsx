@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { Search, X } from "lucide-react";
-import { searchProducts } from "@/data/products";
+import { useCatalog } from "@/lib/catalog-context";
 import { formatPrice } from "@/lib/utils";
 import { classNames } from "@/lib/utils";
 
@@ -17,7 +17,7 @@ interface SearchBarProps {
 
 /**
  * Global product search input. Matches on product name, brand, and category
- * (see data/products.ts -> searchProducts). Shows a live dropdown of up to 5
+ * (filtered in memory from the catalog context). Shows a live dropdown of up to 5
  * matches and submits to /shop?q=... for the full results page.
  */
 export default function SearchBar({ className, autoFocus, onNavigate }: SearchBarProps) {
@@ -26,7 +26,18 @@ export default function SearchBar({ className, autoFocus, onNavigate }: SearchBa
   const router = useRouter();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const results = query.trim().length > 0 ? searchProducts(query).slice(0, 5) : [];
+  const { products } = useCatalog();
+  const q = query.trim().toLowerCase();
+  const results = q
+    ? products
+        .filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            p.brand.toLowerCase().includes(q) ||
+            p.category.toLowerCase().includes(q)
+        )
+        .slice(0, 5)
+    : [];
   const showDropdown = isFocused && query.trim().length > 0;
 
   useEffect(() => {

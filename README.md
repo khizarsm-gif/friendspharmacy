@@ -214,3 +214,15 @@ scripts/generate-placeholders.py  Regenerates the demo placeholder images
   not perform prescription verification or unsafe medical dispensing.
 - **Medical disclaimer**: shown in the footer, the About page, and on every
   product detail page.
+
+## Admin portal (`/admin`)
+
+- **Sign in:** `/admin/login`. Accounts are created in Supabase (Authentication → Users) and must also be listed in the `admin_users` table. Signing up alone gives no access; Row Level Security enforces this in the database.
+- **Dashboard:** catalog totals, low/out-of-stock alerts, recent products.
+- **Products:** search/filter, add, edit, delete. Photos upload straight to the `product-images` Storage bucket (JPG/PNG/WebP/GIF, 5 MB max).
+- **Categories:** add, edit (renaming a slug updates its products automatically), reorder, delete (blocked while products still use it).
+- Saves refresh the live store immediately (cache tag `catalog`).
+- **Required env vars** (local `.env.local` and Vercel → Settings → Environment Variables): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+- Database changes are recorded in `supabase/migrations/`.
+- **Add another admin:** create the user in Supabase, then run
+  `insert into public.admin_users (user_id) select id from auth.users where email = '<their email>';`

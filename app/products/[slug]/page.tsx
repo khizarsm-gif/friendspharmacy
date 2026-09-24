@@ -10,12 +10,21 @@ interface ProductPageProps {
   params: { slug: string };
 }
 
-export function generateStaticParams() {
-  return getAllProducts().map((p) => ({ slug: p.slug }));
+// Pre-render known products at build time; new ones added in the admin
+// render on first visit. If Supabase is unreachable during the build, skip
+// pre-rendering instead of failing the deploy.
+export async function generateStaticParams() {
+  try {
+    const products = await getAllProducts();
+    return products.map((p) => ({ slug: p.slug }));
+  } catch (err) {
+    console.error("[products] generateStaticParams failed:", err);
+    return [];
+  }
 }
 
-export function generateMetadata({ params }: ProductPageProps): Metadata {
-  const product = getProductBySlug(params.slug);
+export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
+  const product = await getProductBySlug(params.slug);
   if (!product) return { title: "Product Not Found" };
 
   return {
@@ -30,12 +39,14 @@ export function generateMetadata({ params }: ProductPageProps): Metadata {
   };
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const product = getProductBySlug(params.slug);
+export default async function ProductPage({ params }: ProductPageProps) {
+  const product = await getProductBySlug(params.slug);
   if (!product) notFound();
 
-  const category = getCategoryBySlug(product.category);
-  const relatedProducts = getRelatedProducts(product);
+  const [category, relatedProducts] = await Promise.all([
+    getCategoryBySlug(product.category),
+    getRelatedProducts(product),
+  ]);
 
   const jsonLd = {
     "@context": "https://schema.org",

@@ -1,6 +1,6 @@
 "use client";
 
-import { categories } from "@/data/categories";
+import { useCatalog } from "@/lib/catalog-context";
 import type { CategorySlug, SortOption } from "@/types";
 import { formatPrice } from "@/lib/utils";
 
@@ -30,6 +30,7 @@ export default function ProductFilters({
   priceCeiling,
   resultCount,
 }: ProductFiltersProps) {
+  const { categories } = useCatalog();
   return (
     <div className="card flex flex-col gap-6 p-4 sm:p-5">
       <div className="flex items-center justify-between">

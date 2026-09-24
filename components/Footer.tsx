@@ -1,10 +1,10 @@
 import Link from "next/link";
 import { Cross, Phone, MessageCircle, Mail, MapPin, Clock, Facebook, Instagram, Twitter } from "lucide-react";
 import { businessConfig } from "@/config/business";
-import { categories } from "@/data/categories";
+import type { Category } from "@/types";
 import { buildTelUrl, buildWhatsAppContactUrl } from "@/lib/whatsapp";
 
-export default function Footer() {
+export default function Footer({ categories }: { categories: Category[] }) {
   const year = new Date().getFullYear();
 
   return (

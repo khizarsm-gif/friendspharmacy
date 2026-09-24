@@ -1,11 +1,9 @@
 import Link from "next/link";
-import * as Icons from "lucide-react";
 import type { Category } from "@/types";
-import { getProductsByCategory } from "@/data/products";
+import { getCategoryIcon } from "@/lib/category-icons";
 
-export default function CategoryCard({ category }: { category: Category }) {
-  const count = getProductsByCategory(category.slug).length;
-  const Icon = (Icons as unknown as Record<string, Icons.LucideIcon>)[category.icon] || Icons.Pill;
+export default function CategoryCard({ category, count }: { category: Category; count: number }) {
+  const Icon = getCategoryIcon(category.icon);
 
   return (
     <Link
