@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { requireAdminAction } from "@/lib/admin-auth";
+import { requireOwnerAction } from "@/lib/admin-auth";
 import { refreshStorefront, slugify } from "@/lib/admin-utils";
 import { CATEGORY_ICON_NAMES } from "@/lib/category-icons";
 
@@ -38,7 +38,7 @@ export async function createCategory(
   _prev: CategoryActionState,
   formData: FormData
 ): Promise<CategoryActionState> {
-  const { supabase, error: authError } = await requireAdminAction();
+  const { supabase, error: authError } = await requireOwnerAction();
   if (!supabase) return { error: authError };
 
   let row;
@@ -63,7 +63,7 @@ export async function updateCategory(
   _prev: CategoryActionState,
   formData: FormData
 ): Promise<CategoryActionState> {
-  const { supabase, error: authError } = await requireAdminAction();
+  const { supabase, error: authError } = await requireOwnerAction();
   if (!supabase) return { error: authError };
 
   let row;
@@ -85,7 +85,7 @@ export async function updateCategory(
 }
 
 export async function deleteCategory(slug: string): Promise<{ error: string | null }> {
-  const { supabase, error: authError } = await requireAdminAction();
+  const { supabase, error: authError } = await requireOwnerAction();
   if (!supabase) return { error: authError };
 
   const { count, error: countError } = await supabase

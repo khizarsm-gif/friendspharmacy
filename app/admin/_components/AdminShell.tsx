@@ -1,24 +1,47 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
-  ExternalLink, LayoutDashboard, LogOut, Menu, Package, Tags, X, type LucideIcon,
+  ExternalLink, KeyRound, LayoutDashboard, LogOut, Menu, Package, Tags, Users, X, type LucideIcon,
 } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import { signOut } from "../actions";
 
-const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean }[] = [
+type Role = "owner" | "purchaser";
+
+const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean; ownerOnly?: boolean }[] = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: Tags },
+  { href: "/admin/team", label: "Team", icon: Users, ownerOnly: true },
+  { href: "/admin/account", label: "My account", icon: KeyRound },
 ];
 
-export default function AdminShell({ email, children }: { email: string; children: ReactNode }) {
+export default function AdminShell({
+  email,
+  name,
+  role,
+  mustChangePassword,
+  children,
+}: {
+  email: string;
+  name: string | null;
+  role: Role;
+  mustChangePassword: boolean;
+  children: ReactNode;
+}) {
   const pathname = usePathname() ?? "";
+  const router = useRouter();
   const [open, setOpen] = useState(false);
+  const nav = NAV.filter((item) => !item.ownerOnly || role === "owner");
+
+  // New members must replace their temporary password before doing anything else.
+  useEffect(() => {
+    if (mustChangePassword && pathname !== "/admin/account") router.replace("/admin/account");
+  }, [mustChangePassword, pathname, router]);
 
   const isActive = (href: string, exact?: boolean) =>
     exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`);
@@ -35,7 +58,7 @@ export default function AdminShell({ email, children }: { email: string; childre
       </Link>
 
       <nav className="flex-1 space-y-1 px-3 py-2" aria-label="Admin">
-        {NAV.map(({ href, label, icon: Icon, exact }) => (
+        {nav.map(({ href, label, icon: Icon, exact }) => (
           <Link
             key={href}
             href={href}
@@ -64,9 +87,13 @@ export default function AdminShell({ email, children }: { email: string; childre
       </nav>
 
       <div className="border-t border-white/10 p-4">
+        {name && <p className="truncate text-sm font-medium text-white">{name}</p>}
         <p className="truncate text-xs text-brand-300" title={email}>
           {email}
         </p>
+        <span className="mt-1.5 inline-block rounded-full bg-white/10 px-2 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-brand-100">
+          {role}
+        </span>
         <form action={signOut} className="mt-2">
           <button
             type="submit"

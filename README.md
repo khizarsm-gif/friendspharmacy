@@ -224,5 +224,7 @@ scripts/generate-placeholders.py  Regenerates the demo placeholder images
 - Saves refresh the live store immediately (cache tag `catalog`).
 - **Required env vars** (local `.env.local` and Vercel → Settings → Environment Variables): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 - Database changes are recorded in `supabase/migrations/`.
-- **Add another admin:** create the user in Supabase, then run
-  `insert into public.admin_users (user_id) select id from auth.users where email = '<their email>';`
+- **Team (owners only):** `/admin/team` to add members (name, email, role, temporary password), change roles, reset passwords, and remove members. New members must choose their own password at first sign-in (`/admin/account`).
+  - **Owner:** full access, including categories and team.
+  - **Purchaser:** add/edit/delete products and photos; categories are view-only.
+  - Requires the server-only env var `SUPABASE_SERVICE_ROLE_KEY` in Vercel (never prefix it with `NEXT_PUBLIC_`).

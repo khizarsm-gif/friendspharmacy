@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
-import { requireAdminPage } from "@/lib/admin-auth";
+import { getAdminSession, requireAdminPage } from "@/lib/admin-auth";
 import { adminListCategories } from "@/lib/admin-data";
 import { getCategoryIcon } from "@/lib/category-icons";
 import PageHeader from "../_components/PageHeader";
@@ -16,6 +16,8 @@ export default async function AdminCategoriesPage({
   searchParams: { saved?: string };
 }) {
   const supabase = await requireAdminPage();
+  const { role } = await getAdminSession();
+  const isOwner = role === "owner";
   const [categories, { data: productRows }] = await Promise.all([
     adminListCategories(supabase),
     supabase.from("products").select("category"),
@@ -29,12 +31,18 @@ export default async function AdminCategoriesPage({
     <div>
       <PageHeader
         title="Categories"
-        description="Categories appear on the homepage, in shop filters and in the footer."
+        description={
+            isOwner
+              ? "Categories appear on the homepage, in shop filters and in the footer."
+              : "View only. Ask an owner to add or change categories."
+        }
         actions={
+          isOwner && (
           <Link href="/admin/categories/new" className="btn-primary !py-2.5">
             <Plus className="h-4 w-4" aria-hidden="true" />
             Add category
           </Link>
+          )
         }
       />
       <Flash saved={searchParams.saved} />
@@ -65,6 +73,7 @@ export default async function AdminCategoriesPage({
                   >
                     {count} {count === 1 ? "product" : "products"}
                   </Link>
+                  {isOwner && (
                   <div className="flex items-center gap-1">
                     <Link
                       href={`/admin/categories/${encodeURIComponent(c.slug)}/edit`}
@@ -80,6 +89,7 @@ export default async function AdminCategoriesPage({
                       label={`Delete ${c.name}`}
                     />
                   </div>
+                  )}
                 </div>
               </li>
             );

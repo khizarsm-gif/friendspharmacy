@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { requireAdminPage } from "@/lib/admin-auth";
+import { requireOwnerPage } from "@/lib/admin-auth";
 import { adminGetCategory } from "@/lib/admin-data";
 import PageHeader from "../../../_components/PageHeader";
 import CategoryForm from "../../CategoryForm";
@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 export default async function EditCategoryPage({ params }: { params: { slug: string } }) {
   const slug = decodeURIComponent(params.slug);
-  const supabase = await requireAdminPage();
+  const { supabase } = await requireOwnerPage();
   const [category, { count }] = await Promise.all([
     adminGetCategory(supabase, slug),
     supabase.from("products").select("id", { count: "exact", head: true }).eq("category", slug),

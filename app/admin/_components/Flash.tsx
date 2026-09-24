@@ -5,6 +5,8 @@ const MESSAGES: Record<string, string> = {
   "product-updated": "Product saved.",
   "category-created": "Category added.",
   "category-updated": "Category saved.",
+  "member-added": "Team member added. Share their email and temporary password with them privately.",
+  "password-reset": "Temporary password set. They'll choose a new one at next sign-in.",
 };
 
 /** Success banner driven by the ?saved= query param set after a redirect. */

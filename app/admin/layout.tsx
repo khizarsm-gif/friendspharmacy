@@ -19,7 +19,7 @@ export const metadata: Metadata = {
  * - Admin: the sidebar shell.
  */
 export default async function AdminLayout({ children }: { children: ReactNode }) {
-  const { user, isAdmin } = await getAdminSession();
+  const { user, isAdmin, role, displayName, mustChangePassword } = await getAdminSession();
 
   if (!user) return <>{children}</>;
 
@@ -44,5 +44,14 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     );
   }
 
-  return <AdminShell email={user.email ?? ""}>{children}</AdminShell>;
+  return (
+    <AdminShell
+      email={user.email ?? ""}
+      name={displayName}
+      role={role ?? "purchaser"}
+      mustChangePassword={mustChangePassword}
+    >
+      {children}
+    </AdminShell>
+  );
 }
