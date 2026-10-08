@@ -4,14 +4,14 @@ import type { PlacedOrder } from "@/types";
 
 /**
  * Staff notification email for a newly saved order. Server-only.
+ * Sent through Brevo's transactional email API (https://developers.brevo.com).
  *
  * Configured with environment variables (set them in Vercel, never in code):
- *   RESEND_API_KEY      API key from resend.com (send-only)
+ *   BREVO_API_KEY       API key from the Brevo account. Secret.
  *   ORDER_NOTIFY_EMAIL  where new-order alerts go (comma-separated for several)
- *   ORDER_FROM_EMAIL    optional sender, e.g. "Friends Pharmacy <orders@yourdomain.com>".
- *                       Defaults to Resend's shared test sender.
+ *   ORDER_FROM_EMAIL    sender address. Must be a sender verified in Brevo.
  *
- * If the variables are missing, or the email provider is down, this logs and
+ * If any variable is missing, or the email provider is down, this logs and
  * returns. The order is already saved, so a failed email never fails checkout.
  */
 
@@ -40,17 +40,18 @@ function row(label: string, value: string): string {
 }
 
 export async function sendNewOrderEmail(order: PlacedOrder, d: OrderEmailDetails): Promise<void> {
-  const apiKey = process.env.RESEND_API_KEY;
+  const apiKey = process.env.BREVO_API_KEY;
+  const fromEmail = process.env.ORDER_FROM_EMAIL;
   const to = (process.env.ORDER_NOTIFY_EMAIL ?? "")
     .split(",")
     .map((s) => s.trim())
-    .filter(Boolean);
-  if (!apiKey || to.length === 0) {
-    console.warn("[order-email] not configured (RESEND_API_KEY / ORDER_NOTIFY_EMAIL); skipping");
+    .filter(Boolean)
+    .map((email) => ({ email }));
+  if (!apiKey || !fromEmail || to.length === 0) {
+    console.warn("[order-email] not configured (BREVO_API_KEY / ORDER_FROM_EMAIL / ORDER_NOTIFY_EMAIL); skipping");
     return;
   }
 
-  const from = process.env.ORDER_FROM_EMAIL || `${businessConfig.name} Orders <onboarding@resend.dev>`;
   const host = process.env.VERCEL_PROJECT_PRODUCTION_URL;
   const adminUrl = host ? `https://${host}/admin/orders` : null;
 
@@ -87,10 +88,16 @@ ${adminUrl ? `<p style="margin:16px 0 0"><a href="${esc(adminUrl)}">Open in the 
     .join("\n");
 
   try {
-    const res = await fetch("https://api.resend.com/emails", {
+    const res = await fetch("https://api.brevo.com/v3/smtp/email", {
       method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ from, to, subject: `New order ${order.orderNumber} (${formatPrice(order.total)})`, html, text }),
+      headers: { "api-key": apiKey, "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        sender: { name: `${businessConfig.name} Orders`, email: fromEmail },
+        to,
+        subject: `New order ${order.orderNumber} (${formatPrice(order.total)})`,
+        htmlContent: html,
+        textContent: text,
+      }),
       // Never let a slow email provider hold up the customer's confirmation screen.
       signal: AbortSignal.timeout(6000),
     });
