@@ -215,6 +215,27 @@ scripts/generate-placeholders.py  Regenerates the demo placeholder images
 - **Medical disclaimer**: shown in the footer, the About page, and on every
   product detail page.
 
+## Orders
+
+Checkout saves every order to Supabase (`orders`, `order_items`,
+`order_status_history`; see `supabase/migrations/20261006120000_orders.sql`).
+After placing an order the customer gets an order number and an optional
+"Send order on WhatsApp" button.
+
+- Staff manage orders at `/admin/orders` (owners and purchasers): filter by
+  status, search by order number, name or phone, update status, add a note,
+  and keep private internal notes. Every status change is recorded in the
+  order history.
+- Statuses: New, Confirmed, Out for delivery (delivery orders only), Ready for
+  pickup (pickup orders only), Completed, Cancelled.
+- Prices and totals are calculated inside the database from the product
+  catalog; the browser cannot set them. Pickup orders pay no delivery fee.
+- Product stock is not changed by orders. The database only checks that the
+  listed stock covers the quantity ordered.
+- Needs `SUPABASE_SERVICE_ROLE_KEY` set in Vercel (the same key Team
+  management already uses). Apply the migration before deploying this code.
+- A phone number can place at most 5 orders per hour.
+
 ## Admin portal (`/admin`)
 
 - **Sign in:** `/admin/login`. Accounts are created in Supabase (Authentication → Users) and must also be listed in the `admin_users` table. Signing up alone gives no access; Row Level Security enforces this in the database.

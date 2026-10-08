@@ -8,42 +8,81 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import CheckoutForm from "@/components/CheckoutForm";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice, effectivePrice } from "@/lib/utils";
-import { buildWhatsAppOrderUrl } from "@/lib/whatsapp";
-import type { CheckoutDetails } from "@/types";
+import { buildWhatsAppSavedOrderUrl } from "@/lib/whatsapp";
+import type { CheckoutDetails, DeliveryMethod, PlacedOrder } from "@/types";
+import { placeOrder } from "./actions";
 
 export default function CheckoutClient() {
-  const { lines, subtotal, deliveryFee, total, clearCart, isHydrated } = useCart();
-  const [orderPlaced, setOrderPlaced] = useState(false);
+  const { lines, subtotal, deliveryFee: cartDeliveryFee, clearCart, isHydrated } = useCart();
+  const [placed, setPlaced] = useState<{ order: PlacedOrder; whatsappUrl: string } | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
 
-  const handleSubmit = (details: CheckoutDetails) => {
-    const whatsappUrl = buildWhatsAppOrderUrl(
-      lines.map((l) => ({ product: l.product, quantity: l.quantity })),
-      deliveryFee,
-      { fullName: details.fullName, phone: details.phone, address: details.address }
-    );
+  // Pickup orders pay no delivery fee. This mirrors the rule applied in the
+  // database (create_order), which is the source of truth for the saved total.
+  const deliveryFee = deliveryMethod === "pickup" ? 0 : cartDeliveryFee;
+  const total = subtotal + deliveryFee;
 
-    // NOTE: This MVP has no backend/database yet, so "placing an order" means
-    // opening a pre-filled WhatsApp message to the pharmacy's configured
-    // number (config/business.ts) with the full order + customer details.
-    // When a real backend is added, this is the place to POST the order to
-    // an /api/orders route instead (see README "What to add in Phase 2").
-    window.open(whatsappUrl, "_blank", "noopener,noreferrer");
-    setOrderPlaced(true);
-    clearCart();
+  const handleSubmit = async (details: CheckoutDetails) => {
+    setSubmitting(true);
+    setError(null);
+    try {
+      const result = await placeOrder({
+        details,
+        items: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+      });
+      if (!result.ok) {
+        setError(result.error);
+        return;
+      }
+      // The order is saved. WhatsApp is an optional extra for faster
+      // confirmation, offered as a button (a tap is never blocked by the
+      // browser, unlike a window opened after an async call).
+      setPlaced({
+        order: result.order,
+        whatsappUrl: buildWhatsAppSavedOrderUrl(result.order, {
+          fullName: details.fullName,
+          phone: details.phone,
+          address: details.deliveryMethod === "delivery" ? details.address : "",
+        }),
+      });
+      clearCart();
+    } catch (err) {
+      console.error("[checkout] placeOrder threw:", err instanceof Error ? err.message : err);
+      setError("We couldn't save your order. Please check your connection and try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
-  if (orderPlaced) {
+  if (placed) {
     return (
       <div className="container-page py-16">
         <div className="mx-auto flex max-w-lg flex-col items-center gap-4 rounded-2xl border border-brand-100 bg-brand-50 p-10 text-center">
           <CheckCircle2 className="h-14 w-14 text-brand-600" aria-hidden="true" />
-          <h1 className="text-2xl font-bold text-gray-900">Order Sent!</h1>
+          <h1 className="text-2xl font-bold text-gray-900">Order received</h1>
           <p className="text-sm text-gray-600">
-            We&apos;ve opened WhatsApp with your order details. Please send
-            the message to confirm your order with our pharmacy team — we&apos;ll
-            follow up shortly to confirm availability and delivery.
+            Your order number is{" "}
+            <strong className="text-gray-900">{placed.order.orderNumber}</strong>. Total:{" "}
+            <strong className="text-gray-900">{formatPrice(placed.order.total)}</strong>. Please keep
+            this number for reference.
           </p>
-          <Link href="/shop" className="btn-primary">
+          <p className="text-sm text-gray-600">
+            Our pharmacy team will contact you shortly to confirm availability and{" "}
+            {deliveryMethod === "pickup" ? "pickup" : "delivery"}. For a faster reply, you can also
+            send us your order on WhatsApp.
+          </p>
+          <a
+            href={placed.whatsappUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="btn-whatsapp"
+          >
+            <MessageCircle className="h-4 w-4" aria-hidden="true" />
+            Send order on WhatsApp
+          </a>
+          <Link href="/shop" className="btn-secondary">
             Continue Shopping
           </Link>
         </div>
@@ -78,7 +117,13 @@ export default function CheckoutClient() {
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-[1fr_380px]">
         <div className="card p-5 sm:p-6">
-          <CheckoutForm onSubmit={handleSubmit} submitLabel="Place Order via WhatsApp" />
+          <CheckoutForm
+            onSubmit={handleSubmit}
+            submitLabel="Place Order"
+            submitting={submitting}
+            serverError={error}
+            onDeliveryMethodChange={setDeliveryMethod}
+          />
         </div>
 
         <div className="card h-fit p-5">
@@ -119,8 +164,8 @@ export default function CheckoutClient() {
 
           <p className="mt-4 flex items-start gap-2 text-xs text-gray-400">
             <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#25D366]" aria-hidden="true" />
-            Placing your order opens WhatsApp with your order pre-filled, so
-            our team can confirm it with you directly.
+            Your order is saved with our team, who will contact you to confirm
+            it. You can also send it on WhatsApp after placing it.
           </p>
         </div>
       </div>

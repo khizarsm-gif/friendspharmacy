@@ -6,6 +6,7 @@ const MESSAGES: Record<string, string> = {
   "category-created": "Category added.",
   "category-updated": "Category saved.",
   "member-added": "Team member added. Share their email and temporary password with them privately.",
+  "order-updated": "Order updated.",
   "password-reset": "Temporary password set. They'll choose a new one at next sign-in.",
 };
 

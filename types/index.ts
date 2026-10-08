@@ -65,3 +65,59 @@ export interface CheckoutDetails {
 }
 
 export type SortOption = "popular" | "price-asc" | "price-desc" | "newest";
+
+export type OrderStatus =
+  | "new"
+  | "confirmed"
+  | "out_for_delivery"
+  | "ready_for_pickup"
+  | "completed"
+  | "cancelled";
+
+export interface OrderItem {
+  id: number;
+  productId: number | null;
+  productName: string;
+  sku: string | null;
+  unitPrice: number;
+  quantity: number;
+  lineTotal: number;
+}
+
+export interface OrderStatusHistoryEntry {
+  id: number;
+  fromStatus: OrderStatus | null;
+  toStatus: OrderStatus;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface Order {
+  id: string;
+  orderNumber: string;
+  status: OrderStatus;
+  customerName: string;
+  phone: string;
+  whatsapp: string;
+  email: string | null;
+  deliveryMethod: DeliveryMethod;
+  paymentMethod: PaymentMethod;
+  address: string | null;
+  city: string | null;
+  notes: string | null;
+  internalNotes: string | null;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** What the checkout server action returns after an order is saved. */
+export interface PlacedOrder {
+  orderNumber: string;
+  subtotal: number;
+  deliveryFee: number;
+  total: number;
+  items: { name: string; quantity: number; unitPrice: number; lineTotal: number }[];
+}

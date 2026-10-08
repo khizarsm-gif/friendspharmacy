@@ -29,8 +29,8 @@ export const businessConfig = {
   whatsapp: "+92 304 0286986",
   // Raw digits only, international format, no leading + — required by wa.me links.
   whatsappRaw: "923040286986",
-  // TODO: placeholder — you didn't provide a real email yet; update when ready.
-  email: "info@example.com",
+  // Interim contact email. Replace with a business-domain address once one exists.
+  email: "khizarsm@gmail.com",
 
   // --- Location --------------------------------------------------------------
   address: "03 Tulip Overseas Commercial, Park View City, Lahore, Pakistan",
