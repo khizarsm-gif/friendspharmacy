@@ -1,8 +1,9 @@
 import Image from "next/image";
 import Link from "next/link";
-import { AlertTriangle, Package, PackageX, Plus, Star, Tags, type LucideIcon } from "lucide-react";
+import { AlertTriangle, ClipboardList, Package, PackageX, Plus, Star, Tags, type LucideIcon } from "lucide-react";
 import { requireAdminPage } from "@/lib/admin-auth";
 import { adminListCategories, adminListProducts, LOW_STOCK_THRESHOLD } from "@/lib/admin-data";
+import { adminNewOrderCount } from "@/lib/admin-orders";
 import { formatPrice } from "@/lib/utils";
 import PageHeader from "./_components/PageHeader";
 
@@ -43,9 +44,10 @@ function StatCard({
 
 export default async function AdminDashboardPage() {
   const supabase = await requireAdminPage();
-  const [products, categories] = await Promise.all([
+  const [products, categories, newOrders] = await Promise.all([
     adminListProducts(supabase),
     adminListCategories(supabase),
+    adminNewOrderCount(supabase),
   ]);
 
   const outOfStock = products.filter((p) => p.stock <= 0);
@@ -90,6 +92,15 @@ export default async function AdminDashboardPage() {
       )}
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        {newOrders !== null && (
+          <StatCard
+            label="New orders"
+            value={newOrders}
+            icon={ClipboardList}
+            tone={newOrders > 0 ? "amber" : "brand"}
+            href="/admin/orders?status=new"
+          />
+        )}
         <StatCard label="Products" value={products.length} icon={Package} href="/admin/products" />
         <StatCard label="Categories" value={categories.length} icon={Tags} tone="blue" href="/admin/categories" />
         <StatCard

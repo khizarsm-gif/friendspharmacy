@@ -6,6 +6,12 @@ import type { CheckoutDetails, DeliveryMethod, PaymentMethod } from "@/types";
 interface CheckoutFormProps {
   onSubmit: (details: CheckoutDetails) => void;
   submitLabel?: string;
+  /** Disables the submit button while an order is being saved. */
+  submitting?: boolean;
+  /** Error from saving the order (shown above the submit button). */
+  serverError?: string | null;
+  /** Lets the parent show a delivery fee that matches the chosen method. */
+  onDeliveryMethodChange?: (method: DeliveryMethod) => void;
 }
 
 const initialState: CheckoutDetails = {
@@ -26,7 +32,13 @@ const initialState: CheckoutDetails = {
  * pharmacy only, per the current MVP scope (see /config/business.ts and
  * README for how to later wire up an online payment gateway).
  */
-export default function CheckoutForm({ onSubmit, submitLabel = "Place Order" }: CheckoutFormProps) {
+export default function CheckoutForm({
+  onSubmit,
+  submitLabel = "Place Order",
+  submitting = false,
+  serverError = null,
+  onDeliveryMethodChange,
+}: CheckoutFormProps) {
   const [details, setDetails] = useState<CheckoutDetails>(initialState);
   const [errors, setErrors] = useState<Partial<Record<keyof CheckoutDetails, string>>>({});
 
@@ -150,7 +162,10 @@ export default function CheckoutForm({ onSubmit, submitLabel = "Place Order" }: 
                 name="deliveryMethod"
                 className="h-4 w-4 accent-brand-600"
                 checked={details.deliveryMethod === opt.value}
-                onChange={() => update("deliveryMethod", opt.value)}
+                onChange={() => {
+                  update("deliveryMethod", opt.value);
+                  onDeliveryMethodChange?.(opt.value);
+                }}
               />
               {opt.label}
             </label>
@@ -245,8 +260,18 @@ export default function CheckoutForm({ onSubmit, submitLabel = "Place Order" }: 
         </p>
       </fieldset>
 
-      <button type="submit" className="btn-primary w-full sm:w-auto sm:self-start sm:px-10">
-        {submitLabel}
+      {serverError && (
+        <p role="alert" className="rounded-xl bg-red-50 px-4 py-3 text-sm text-red-700 ring-1 ring-red-200">
+          {serverError}
+        </p>
+      )}
+
+      <button
+        type="submit"
+        disabled={submitting}
+        className="btn-primary w-full sm:w-auto sm:self-start sm:px-10"
+      >
+        {submitting ? "Placing order…" : submitLabel}
       </button>
     </form>
   );
