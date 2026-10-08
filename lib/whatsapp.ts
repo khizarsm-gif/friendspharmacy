@@ -1,6 +1,6 @@
 import { businessConfig } from "@/config/business";
 import { formatPrice, effectivePrice } from "@/lib/utils";
-import type { Product, CheckoutDetails, PlacedOrder } from "@/types";
+import type { Product, CheckoutDetails } from "@/types";
 
 export interface WhatsAppOrderLine {
   product: Product;
@@ -54,30 +54,6 @@ export function buildWhatsAppOrderUrl(
   return `https://wa.me/${businessConfig.whatsappRaw}?text=${encodeURIComponent(
     message
   )}`;
-}
-
-/**
- * WhatsApp link for an order that has already been saved. The message is built
- * from the saved order (authoritative prices and totals), and carries the
- * order number so staff can match it to the order in the admin portal.
- */
-export function buildWhatsAppSavedOrderUrl(
-  order: PlacedOrder,
-  customer: Partial<Pick<CheckoutDetails, "fullName" | "phone" | "address">>
-): string {
-  const productLines = order.items.map((i) => `- ${i.name} x ${i.quantity}`).join("\n");
-  const parts = [
-    `Hello ${businessConfig.name},`,
-    `I just placed order ${order.orderNumber} on your website.`,
-    `Products:\n${productLines}`,
-    `Subtotal: ${formatPrice(order.subtotal)}`,
-    `Delivery: ${order.deliveryFee === 0 ? "Free" : formatPrice(order.deliveryFee)}`,
-    `Total: ${formatPrice(order.total)}`,
-    `Name: ${customer.fullName || ""}`,
-    `Phone: ${customer.phone || ""}`,
-  ];
-  if (customer.address) parts.push(`Address: ${customer.address}`);
-  return `https://wa.me/${businessConfig.whatsappRaw}?text=${encodeURIComponent(parts.join("\n\n"))}`;
 }
 
 /** Simple WhatsApp link for general contact (no order context). */

@@ -249,3 +249,18 @@ After placing an order the customer gets an order number and an optional
   - **Owner:** full access, including categories and team.
   - **Purchaser:** add/edit/delete products and photos; categories are view-only.
   - Requires the server-only env var `SUPABASE_SERVICE_ROLE_KEY` in Vercel (never prefix it with `NEXT_PUBLIC_`).
+
+## New-order email alerts
+
+When a customer places an order, the pharmacy gets an email with the order details
+(sent from `lib/order-email.ts` via Resend). Set these in Vercel -> Settings ->
+Environment Variables, then redeploy:
+
+| Variable | Purpose |
+| --- | --- |
+| `RESEND_API_KEY` | Send-only API key from resend.com. Secret: never commit it. |
+| `ORDER_NOTIFY_EMAIL` | Where alerts go (comma-separated for several addresses). |
+| `ORDER_FROM_EMAIL` | Optional sender, e.g. `Friends Pharmacy <orders@yourdomain.com>`. Needs a verified domain in Resend. Defaults to Resend's shared test sender. |
+
+If the variables are missing or the email service is down, the order is still saved
+and shown in `/admin/orders`; the email is only an alert.

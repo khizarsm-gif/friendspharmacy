@@ -3,18 +3,17 @@
 import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { CheckCircle2, MessageCircle, ShoppingBag } from "lucide-react";
+import { CheckCircle2, ClipboardCheck, ShoppingBag } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CheckoutForm from "@/components/CheckoutForm";
 import { useCart } from "@/lib/cart-context";
 import { formatPrice, effectivePrice } from "@/lib/utils";
-import { buildWhatsAppSavedOrderUrl } from "@/lib/whatsapp";
 import type { CheckoutDetails, DeliveryMethod, PlacedOrder } from "@/types";
 import { placeOrder } from "./actions";
 
 export default function CheckoutClient() {
   const { lines, subtotal, deliveryFee: cartDeliveryFee, clearCart, isHydrated } = useCart();
-  const [placed, setPlaced] = useState<{ order: PlacedOrder; whatsappUrl: string } | null>(null);
+  const [placed, setPlaced] = useState<PlacedOrder | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>("delivery");
@@ -36,17 +35,8 @@ export default function CheckoutClient() {
         setError(result.error);
         return;
       }
-      // The order is saved. WhatsApp is an optional extra for faster
-      // confirmation, offered as a button (a tap is never blocked by the
-      // browser, unlike a window opened after an async call).
-      setPlaced({
-        order: result.order,
-        whatsappUrl: buildWhatsAppSavedOrderUrl(result.order, {
-          fullName: details.fullName,
-          phone: details.phone,
-          address: details.deliveryMethod === "delivery" ? details.address : "",
-        }),
-      });
+      // The order is saved and the pharmacy is notified by email on the server.
+      setPlaced(result.order);
       clearCart();
     } catch (err) {
       console.error("[checkout] placeOrder threw:", err instanceof Error ? err.message : err);
@@ -64,24 +54,14 @@ export default function CheckoutClient() {
           <h1 className="text-2xl font-bold text-gray-900">Order received</h1>
           <p className="text-sm text-gray-600">
             Your order number is{" "}
-            <strong className="text-gray-900">{placed.order.orderNumber}</strong>. Total:{" "}
-            <strong className="text-gray-900">{formatPrice(placed.order.total)}</strong>. Please keep
+            <strong className="text-gray-900">{placed.orderNumber}</strong>. Total:{" "}
+            <strong className="text-gray-900">{formatPrice(placed.total)}</strong>. Please keep
             this number for reference.
           </p>
           <p className="text-sm text-gray-600">
-            Our pharmacy team will contact you shortly to confirm availability and{" "}
-            {deliveryMethod === "pickup" ? "pickup" : "delivery"}. For a faster reply, you can also
-            send us your order on WhatsApp.
+            Your order has been sent to our pharmacy team. We will contact you shortly to confirm
+            availability and {deliveryMethod === "pickup" ? "pickup" : "delivery"}.
           </p>
-          <a
-            href={placed.whatsappUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="btn-whatsapp"
-          >
-            <MessageCircle className="h-4 w-4" aria-hidden="true" />
-            Send order on WhatsApp
-          </a>
           <Link href="/shop" className="btn-secondary">
             Continue Shopping
           </Link>
@@ -163,9 +143,8 @@ export default function CheckoutClient() {
           </div>
 
           <p className="mt-4 flex items-start gap-2 text-xs text-gray-400">
-            <MessageCircle className="mt-0.5 h-4 w-4 shrink-0 text-[#25D366]" aria-hidden="true" />
-            Your order is saved with our team, who will contact you to confirm
-            it. You can also send it on WhatsApp after placing it.
+            <ClipboardCheck className="mt-0.5 h-4 w-4 shrink-0 text-brand-600" aria-hidden="true" />
+            Your order is sent straight to our team, who will contact you to confirm it.
           </p>
         </div>
       </div>
