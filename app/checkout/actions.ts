@@ -2,6 +2,7 @@
 
 import { businessConfig } from "@/config/business";
 import { createAdminClient } from "@/lib/supabase-admin";
+import { sendNewOrderEmail } from "@/lib/order-email";
 import type { CheckoutDetails, PlacedOrder } from "@/types";
 
 export interface PlaceOrderInput {
@@ -106,19 +107,32 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     items: { name: string; quantity: number; unit_price: number; line_total: number }[];
   };
 
-  return {
-    ok: true,
-    order: {
-      orderNumber: o.order_number,
-      subtotal: Number(o.subtotal),
-      deliveryFee: Number(o.delivery_fee),
-      total: Number(o.total),
-      items: o.items.map((i) => ({
-        name: i.name,
-        quantity: i.quantity,
-        unitPrice: Number(i.unit_price),
-        lineTotal: Number(i.line_total),
-      })),
-    },
+  const placed: PlacedOrder = {
+    orderNumber: o.order_number,
+    subtotal: Number(o.subtotal),
+    deliveryFee: Number(o.delivery_fee),
+    total: Number(o.total),
+    items: o.items.map((i) => ({
+      name: i.name,
+      quantity: i.quantity,
+      unitPrice: Number(i.unit_price),
+      lineTotal: Number(i.line_total),
+    })),
   };
+
+  // Alert the pharmacy by email. Awaited so the serverless function is not
+  // stopped early; it never throws and never blocks the order (see lib/order-email.ts).
+  await sendNewOrderEmail(placed, {
+    customerName: fullName,
+    phone,
+    whatsapp,
+    email,
+    deliveryMethod,
+    paymentMethod,
+    address,
+    city,
+    notes,
+  });
+
+  return { ok: true, order: placed };
 }

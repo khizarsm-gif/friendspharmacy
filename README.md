@@ -249,3 +249,18 @@ After placing an order the customer gets an order number and an optional
   - **Owner:** full access, including categories and team.
   - **Purchaser:** add/edit/delete products and photos; categories are view-only.
   - Requires the server-only env var `SUPABASE_SERVICE_ROLE_KEY` in Vercel (never prefix it with `NEXT_PUBLIC_`).
+
+## New-order email alerts
+
+When a customer places an order, the pharmacy gets an email with the order details
+(sent from `lib/order-email.ts` through Brevo's transactional email API). Set these in
+Vercel -> Settings -> Environment Variables, then redeploy:
+
+| Variable | Purpose |
+| --- | --- |
+| `BREVO_API_KEY` | API key from the Brevo account. Secret: never commit it. |
+| `ORDER_NOTIFY_EMAIL` | Where alerts go (comma-separated for several addresses). |
+| `ORDER_FROM_EMAIL` | Sender address. It must be added and verified as a sender in Brevo. |
+
+If any variable is missing or the email service is down, the order is still saved
+and shown in `/admin/orders`; the email is only an alert.
