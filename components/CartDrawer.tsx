@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { X, Trash2, ShoppingBag, MessageCircle } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice, effectivePrice } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import QuantitySelector from "@/components/QuantitySelector";
 import { buildWhatsAppOrderUrl } from "@/lib/whatsapp";
 
@@ -46,7 +46,12 @@ export default function CartDrawer() {
   if (!isDrawerOpen) return null;
 
   const whatsappOrderUrl = buildWhatsAppOrderUrl(
-    lines.map((l) => ({ product: l.product, quantity: l.quantity })),
+    lines.map((l) => ({
+      product: l.product,
+      quantity: l.quantity,
+      optionLabel: l.optionDisplay,
+      unitPrice: l.unitPrice,
+    })),
     deliveryFee
   );
 
@@ -85,8 +90,8 @@ export default function CartDrawer() {
             </div>
           ) : (
             <ul className="flex flex-col gap-4">
-              {lines.map(({ product, quantity }) => (
-                <li key={product.id} className="flex gap-3">
+              {lines.map(({ key, product, quantity, optionDisplay, unitPrice }) => (
+                <li key={key} className="flex gap-3">
                   <Link
                     href={`/products/${product.slug}`}
                     onClick={closeDrawer}
@@ -102,25 +107,23 @@ export default function CartDrawer() {
                     >
                       {product.name}
                     </Link>
-                    <span className="text-xs text-gray-500">
-                      {formatPrice(effectivePrice(product.price, product.salePrice))} each
-                    </span>
+                    {optionDisplay && (
+                      <span className="text-xs font-medium text-brand-700">{optionDisplay}</span>
+                    )}
+                    <span className="text-xs text-gray-500">{formatPrice(unitPrice)} each</span>
                     <div className="mt-1 flex items-center justify-between">
                       <QuantitySelector
                         size="sm"
                         quantity={quantity}
-                        max={product.stock}
-                        onChange={(q) => updateQuantity(product.id, q)}
+                        onChange={(q) => updateQuantity(key, q)}
                       />
                       <span className="text-sm font-semibold text-brand-800">
-                        {formatPrice(
-                          effectivePrice(product.price, product.salePrice) * quantity
-                        )}
+                        {formatPrice(unitPrice * quantity)}
                       </span>
                     </div>
                   </div>
                   <button
-                    onClick={() => removeFromCart(product.id)}
+                    onClick={() => removeFromCart(key)}
                     aria-label={`Remove ${product.name} from cart`}
                     className="h-fit shrink-0 rounded-full p-1.5 text-gray-400 hover:bg-red-50 hover:text-red-500"
                   >

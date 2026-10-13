@@ -7,7 +7,7 @@ import { CheckCircle2, ClipboardCheck, ShoppingBag } from "lucide-react";
 import Breadcrumbs from "@/components/Breadcrumbs";
 import CheckoutForm from "@/components/CheckoutForm";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice, effectivePrice } from "@/lib/utils";
+import { formatPrice } from "@/lib/utils";
 import type { CheckoutDetails, DeliveryMethod, PlacedOrder } from "@/types";
 import { placeOrder } from "./actions";
 
@@ -29,7 +29,11 @@ export default function CheckoutClient() {
     try {
       const result = await placeOrder({
         details,
-        items: lines.map((l) => ({ productId: l.product.id, quantity: l.quantity })),
+        items: lines.map((l) => ({
+          productId: l.product.id,
+          optionLabel: l.optionLabel,
+          quantity: l.quantity,
+        })),
       });
       if (!result.ok) {
         setError(result.error);
@@ -109,8 +113,8 @@ export default function CheckoutClient() {
         <div className="card h-fit p-5">
           <h2 className="mb-4 text-lg font-semibold text-gray-900">Order Summary</h2>
           <ul className="mb-4 flex flex-col gap-3">
-            {lines.map(({ product, quantity }) => (
-              <li key={product.id} className="flex gap-3">
+            {lines.map(({ key, product, quantity, optionDisplay, unitPrice }) => (
+              <li key={key} className="flex gap-3">
                 <span className="relative h-14 w-14 shrink-0 overflow-hidden rounded-lg bg-brand-50">
                   <Image src={product.image} alt={product.name} fill className="object-cover" />
                 </span>
@@ -118,10 +122,13 @@ export default function CheckoutClient() {
                   <span className="block line-clamp-1 text-sm font-medium text-gray-900">
                     {product.name}
                   </span>
+                  {optionDisplay && (
+                    <span className="block text-xs font-medium text-brand-700">{optionDisplay}</span>
+                  )}
                   <span className="block text-xs text-gray-500">Qty: {quantity}</span>
                 </span>
                 <span className="shrink-0 text-sm font-semibold text-gray-900">
-                  {formatPrice(effectivePrice(product.price, product.salePrice) * quantity)}
+                  {formatPrice(unitPrice * quantity)}
                 </span>
               </li>
             ))}

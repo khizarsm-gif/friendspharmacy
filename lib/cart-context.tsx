@@ -10,13 +10,20 @@ import {
 } from "react";
 import { businessConfig } from "@/config/business";
 import { useCatalog } from "@/lib/catalog-context";
-import { effectivePrice } from "@/lib/utils";
+import { findOption, lineKey } from "@/lib/pack-options";
 import type { CartItem, Product } from "@/types";
 
 const STORAGE_KEY = "friends-pharmacy-cart";
 
 export interface CartLine {
+  /** Identifies the line: same product in a different pack size is a different line. */
+  key: string;
   product: Product;
+  /** Pack size label, or null for the product's base unit. */
+  optionLabel: string | null;
+  /** Name of the chosen size to show next to the product (null for a plain product). */
+  optionDisplay: string | null;
+  unitPrice: number;
   quantity: number;
 }
 
@@ -30,9 +37,9 @@ interface CartContextValue {
   isDrawerOpen: boolean;
   openDrawer: () => void;
   closeDrawer: () => void;
-  addToCart: (product: Product, quantity?: number) => void;
-  updateQuantity: (productId: number, quantity: number) => void;
-  removeFromCart: (productId: number) => void;
+  addToCart: (product: Product, quantity?: number, optionLabel?: string | null) => void;
+  updateQuantity: (key: string, quantity: number) => void;
+  removeFromCart: (key: string) => void;
   clearCart: () => void;
   isHydrated: boolean;
 }
@@ -46,10 +53,16 @@ function readCartFromStorage(): CartItem[] {
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter(
-      (item): item is CartItem =>
-        typeof item?.productId === "number" && typeof item?.quantity === "number"
-    );
+    return parsed
+      .filter(
+        (item): item is CartItem =>
+          typeof item?.productId === "number" && typeof item?.quantity === "number"
+      )
+      .map((item) => ({
+        productId: item.productId,
+        optionLabel: typeof item.optionLabel === "string" && item.optionLabel ? item.optionLabel : null,
+        quantity: item.quantity,
+      }));
   } catch {
     return [];
   }
@@ -74,30 +87,35 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
   }, [items, isHydrated]);
 
-  const addToCart = useCallback((product: Product, quantity = 1) => {
+  // Quantities are capped at 99 per line (the checkout limit). Stock is not
+  // tracked per order, so there is no stock-based cap.
+  const addToCart = useCallback((product: Product, quantity = 1, optionLabel: string | null = null) => {
+    const key = lineKey(product.id, optionLabel);
     setItems((prev) => {
-      const existing = prev.find((i) => i.productId === product.id);
+      const existing = prev.find((i) => lineKey(i.productId, i.optionLabel) === key);
       if (existing) {
         return prev.map((i) =>
-          i.productId === product.id
-            ? { ...i, quantity: Math.min(i.quantity + quantity, product.stock) }
+          lineKey(i.productId, i.optionLabel) === key
+            ? { ...i, quantity: Math.min(i.quantity + quantity, 99) }
             : i
         );
       }
-      return [...prev, { productId: product.id, quantity: Math.min(quantity, product.stock) }];
+      return [...prev, { productId: product.id, optionLabel, quantity: Math.min(quantity, 99) }];
     });
     setIsDrawerOpen(true);
   }, []);
 
-  const updateQuantity = useCallback((productId: number, quantity: number) => {
+  const updateQuantity = useCallback((key: string, quantity: number) => {
     setItems((prev) => {
-      if (quantity <= 0) return prev.filter((i) => i.productId !== productId);
-      return prev.map((i) => (i.productId === productId ? { ...i, quantity } : i));
+      if (quantity <= 0) return prev.filter((i) => lineKey(i.productId, i.optionLabel) !== key);
+      return prev.map((i) =>
+        lineKey(i.productId, i.optionLabel) === key ? { ...i, quantity: Math.min(quantity, 99) } : i
+      );
     });
   }, []);
 
-  const removeFromCart = useCallback((productId: number) => {
-    setItems((prev) => prev.filter((i) => i.productId !== productId));
+  const removeFromCart = useCallback((key: string) => {
+    setItems((prev) => prev.filter((i) => lineKey(i.productId, i.optionLabel) !== key));
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);
@@ -106,9 +124,20 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     () =>
       items
         .map((item) => {
-          // Items whose product was deleted in the admin are dropped here.
+          // Items whose product was deleted in the admin are dropped here, and so are
+          // lines whose pack size staff have since removed from the product.
           const product = getProductById(item.productId);
-          return product ? { product, quantity: item.quantity } : null;
+          if (!product) return null;
+          const option = findOption(product, item.optionLabel);
+          if (!option) return null;
+          return {
+            key: lineKey(product.id, item.optionLabel),
+            product,
+            optionLabel: option.label,
+            optionDisplay: product.packOptions.length > 0 ? option.displayLabel : null,
+            unitPrice: option.price,
+            quantity: item.quantity,
+          };
         })
         .filter((line): line is CartLine => Boolean(line)),
     [items, getProductById]
@@ -121,10 +150,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const subtotal = useMemo(
     () =>
-      lines.reduce(
-        (sum, l) => sum + effectivePrice(l.product.price, l.product.salePrice) * l.quantity,
-        0
-      ),
+      lines.reduce((sum, l) => sum + l.unitPrice * l.quantity, 0),
     [lines]
   );
 

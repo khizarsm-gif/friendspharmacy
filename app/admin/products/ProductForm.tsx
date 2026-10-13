@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useFormState, useFormStatus } from "react-dom";
-import { Loader2 } from "lucide-react";
+import { Loader2, Plus, Trash2 } from "lucide-react";
 import type { Category, Product } from "@/types";
 import ImageUpload from "../_components/ImageUpload";
 import { createProduct, updateProduct, type ActionState } from "./actions";
@@ -48,6 +48,13 @@ export default function ProductForm({ categories, mode, product }: ProductFormPr
   const [slugTouched, setSlugTouched] = useState(mode === "edit");
 
   const effectiveSlug = slugTouched ? slug : slugify(name);
+
+  // Extra pack sizes (strip, box, ...). The price above is the price of the single unit.
+  const [packRows, setPackRows] = useState<{ label: string; price: string }[]>(
+    (product?.packOptions ?? []).map((o) => ({ label: o.label, price: String(o.price) }))
+  );
+  const updateRow = (i: number, patch: Partial<{ label: string; price: string }>) =>
+    setPackRows((rows) => rows.map((r, idx) => (idx === i ? { ...r, ...patch } : r)));
 
   return (
     <form action={formAction} className="grid grid-cols-1 gap-6 lg:grid-cols-3">
@@ -129,7 +136,7 @@ export default function ProductForm({ categories, mode, product }: ProductFormPr
         <Section title="Pricing & stock">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <div>
-              <label htmlFor="price" className="label">Price (PKR) *</label>
+              <label htmlFor="price" className="label">Price (PKR) *{packRows.length > 0 && <span className="font-normal text-gray-400"> (of one single unit)</span>}</label>
               <input id="price" name="price" type="number" step="0.01" min="0" defaultValue={product?.price} required className="input" />
             </div>
             <div>
@@ -139,12 +146,85 @@ export default function ProductForm({ categories, mode, product }: ProductFormPr
             <div>
               <label htmlFor="stock" className="label">Stock *</label>
               <input id="stock" name="stock" type="number" min="0" step="1" defaultValue={product?.stock ?? 0} required className="input" />
+              <p className="mt-1 text-xs text-gray-500">
+                Orders do not reduce this number. Use 0 when the product is out of stock; any other number means available.
+              </p>
             </div>
             <div>
               <label htmlFor="sku" className="label">SKU *</label>
               <input id="sku" name="sku" defaultValue={product?.sku} required className="input" />
             </div>
           </div>
+        </Section>
+
+        <Section title="Sizes (optional)">
+          <p className="text-xs text-gray-500">
+            Sell the same product as a single unit and in bigger packs, for example a tablet, a strip of 10 and a
+            box of 20 strips. The price above is the price of the single unit. Leave this empty if the product is
+            sold one way only.
+          </p>
+          <div className="max-w-xs">
+            <label htmlFor="unitLabel" className="label">Single unit name</label>
+            <input
+              id="unitLabel"
+              name="unitLabel"
+              defaultValue={product?.unitLabel}
+              placeholder="e.g. Tablet, Sachet"
+              maxLength={40}
+              className="input"
+            />
+          </div>
+          {packRows.length > 0 && (
+            <div className="space-y-3">
+              {packRows.map((row, i) => (
+                <div key={i} className="grid grid-cols-[1fr_8rem_auto] items-end gap-3">
+                  <div>
+                    <label htmlFor={`optionLabel-${i}`} className="label">Size name</label>
+                    <input
+                      id={`optionLabel-${i}`}
+                      name="optionLabel"
+                      value={row.label}
+                      onChange={(e) => updateRow(i, { label: e.target.value })}
+                      placeholder="e.g. Strip of 10"
+                      maxLength={60}
+                      className="input"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor={`optionPrice-${i}`} className="label">Price (PKR)</label>
+                    <input
+                      id={`optionPrice-${i}`}
+                      name="optionPrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={row.price}
+                      onChange={(e) => updateRow(i, { price: e.target.value })}
+                      className="input"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setPackRows((rows) => rows.filter((_, idx) => idx !== i))}
+                    aria-label={`Remove size ${row.label || i + 1}`}
+                    className="mb-1 rounded-full p-2 text-gray-400 hover:bg-red-50 hover:text-red-500"
+                  >
+                    <Trash2 className="h-4 w-4" aria-hidden="true" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
+          {packRows.length < 8 && (
+            <button
+              type="button"
+              onClick={() => setPackRows((rows) => [...rows, { label: "", price: "" }])}
+              className="btn-secondary !py-2"
+            >
+              <Plus className="h-4 w-4" aria-hidden="true" />
+              Add a size
+            </button>
+          )}
         </Section>
       </div>
 

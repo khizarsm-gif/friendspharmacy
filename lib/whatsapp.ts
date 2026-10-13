@@ -5,6 +5,10 @@ import type { Product, CheckoutDetails } from "@/types";
 export interface WhatsAppOrderLine {
   product: Product;
   quantity: number;
+  /** Pack size to show next to the product name, when the product has several. */
+  optionLabel?: string | null;
+  /** Price of one chosen unit. Falls back to the product's own price when omitted. */
+  unitPrice?: number;
 }
 
 /**
@@ -24,13 +28,17 @@ export function buildWhatsAppOrderUrl(
 ): string {
   const subtotal = lines.reduce(
     (sum, line) =>
-      sum + effectivePrice(line.product.price, line.product.salePrice) * line.quantity,
+      sum +
+      (line.unitPrice ?? effectivePrice(line.product.price, line.product.salePrice)) * line.quantity,
     0
   );
   const total = subtotal + (lines.length > 0 ? deliveryFee : 0);
 
   const productLines = lines
-    .map((line) => `- ${line.product.name} x ${line.quantity}`)
+    .map(
+      (line) =>
+        `- ${line.product.name}${line.optionLabel ? ` (${line.optionLabel})` : ""} x ${line.quantity}`
+    )
     .join("\n");
 
   const messageParts = [

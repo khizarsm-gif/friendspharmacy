@@ -131,6 +131,7 @@ export async function adminGetOrder(
       id: i.id,
       productId: i.product_id,
       productName: i.product_name,
+      optionLabel: i.option_label ?? null,
       sku: i.sku,
       unitPrice: Number(i.unit_price),
       quantity: i.quantity,

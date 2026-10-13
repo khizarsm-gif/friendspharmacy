@@ -9,6 +9,7 @@ import { useCart } from "@/lib/cart-context";
 import { useWishlist } from "@/lib/wishlist-context";
 import { useToast } from "@/lib/toast-context";
 import { useCatalog } from "@/lib/catalog-context";
+import { hasPackOptions } from "@/lib/pack-options";
 
 export default function ProductCard({ product }: { product: Product }) {
   const { addToCart } = useCart();
@@ -19,7 +20,7 @@ export default function ProductCard({ product }: { product: Product }) {
   const onSale = isOnSale(product.price, product.salePrice);
   const discount = calculateDiscountPercent(product.price, product.salePrice);
   const outOfStock = product.stock <= 0;
-  const lowStock = !outOfStock && product.stock <= 10;
+  const withOptions = hasPackOptions(product);
   const category = getCategory(product.category);
   const wishlisted = isWishlisted(product.id);
 
@@ -103,9 +104,10 @@ export default function ProductCard({ product }: { product: Product }) {
           )}
         </div>
 
-        {lowStock && (
-          <span className="text-xs font-medium text-amber-600">
-            Only {product.stock} left in stock
+        {withOptions && (
+          <span className="text-xs text-gray-500">
+            {product.unitLabel ? `Per ${product.unitLabel.toLowerCase()} · ` : ""}
+            {product.packOptions.length + 1} sizes available
           </span>
         )}
 
@@ -117,6 +119,15 @@ export default function ProductCard({ product }: { product: Product }) {
             >
               <ShieldAlert className="h-4 w-4" aria-hidden="true" />
               Prescription Required
+            </Link>
+          ) : withOptions && !outOfStock ? (
+            // Several sizes: let the customer pick one on the product page.
+            <Link
+              href={`/products/${product.slug}`}
+              className="btn-primary w-full !py-2 text-xs sm:text-sm"
+            >
+              <ShoppingCart className="h-4 w-4" aria-hidden="true" />
+              Choose size
             </Link>
           ) : (
             <button

@@ -9,6 +9,7 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import ProductGrid from "@/components/ProductGrid";
 import QuantitySelector from "@/components/QuantitySelector";
 import { formatPrice, isOnSale, calculateDiscountPercent } from "@/lib/utils";
+import { hasPackOptions, sellableOptions } from "@/lib/pack-options";
 import { useCart } from "@/lib/cart-context";
 import { useToast } from "@/lib/toast-context";
 import { useWishlist } from "@/lib/wishlist-context";
@@ -27,18 +28,27 @@ export default function ProductDetailClient({
   relatedProducts,
 }: ProductDetailClientProps) {
   const [quantity, setQuantity] = useState(1);
+  // Index into sellableOptions(product): 0 is the base unit, the rest are pack sizes.
+  const [optionIndex, setOptionIndex] = useState(0);
   const { addToCart } = useCart();
   const { showToast } = useToast();
   const { isWishlisted, toggleWishlist } = useWishlist();
 
+  const options = sellableOptions(product);
+  const withOptions = hasPackOptions(product);
+  const selected = options[Math.min(optionIndex, options.length - 1)];
+  // The sale badge applies to the base unit only.
   const onSale = isOnSale(product.price, product.salePrice);
   const discount = calculateDiscountPercent(product.price, product.salePrice);
+  const showSale = selected.label === null && onSale;
   const outOfStock = product.stock <= 0;
   const wishlisted = isWishlisted(product.id);
 
   const handleAddToCart = () => {
-    addToCart(product, quantity);
-    showToast(`${quantity} × ${product.name} added to cart`);
+    addToCart(product, quantity, selected.label);
+    showToast(
+      `${quantity} × ${product.name}${withOptions ? ` (${selected.displayLabel})` : ""} added to cart`
+    );
   };
 
   return (
@@ -90,10 +100,10 @@ export default function ProductDetailClient({
           </div>
 
           <div className="flex items-center gap-3">
-            {onSale ? (
+            {showSale ? (
               <>
                 <span className="text-3xl font-bold text-brand-800">
-                  {formatPrice(product.salePrice as number)}
+                  {formatPrice(selected.price)}
                 </span>
                 <span className="text-lg text-gray-400 line-through">
                   {formatPrice(product.price)}
@@ -101,18 +111,17 @@ export default function ProductDetailClient({
               </>
             ) : (
               <span className="text-3xl font-bold text-brand-800">
-                {formatPrice(product.price)}
+                {formatPrice(selected.price)}
               </span>
+            )}
+            {withOptions && (
+              <span className="text-sm text-gray-500">per {selected.displayLabel.toLowerCase()}</span>
             )}
           </div>
 
           <div>
             {outOfStock ? (
               <span className="badge bg-gray-200 text-gray-700">Out of Stock</span>
-            ) : product.stock <= 10 ? (
-              <span className="badge bg-amber-100 text-amber-700">
-                Low Stock — only {product.stock} left
-              </span>
             ) : (
               <span className="badge bg-brand-100 text-brand-700">In Stock</span>
             )}
@@ -151,13 +160,36 @@ export default function ProductDetailClient({
             </div>
           ) : (
             <div className="flex flex-col gap-4 pt-2">
+              {withOptions && (
+                <fieldset>
+                  <legend className="label">Choose a size</legend>
+                  <div className="flex flex-wrap gap-2">
+                    {options.map((o, i) => (
+                      <label
+                        key={o.label ?? "__base"}
+                        className={`cursor-pointer rounded-xl border px-4 py-2.5 text-sm transition-colors ${
+                          i === optionIndex
+                            ? "border-brand-600 bg-brand-50 text-brand-800 ring-1 ring-brand-600"
+                            : "border-gray-300 text-gray-700 hover:border-brand-400"
+                        }`}
+                      >
+                        <input
+                          type="radio"
+                          name="pack-option"
+                          className="sr-only"
+                          checked={i === optionIndex}
+                          onChange={() => setOptionIndex(i)}
+                        />
+                        <span className="block font-medium">{o.displayLabel}</span>
+                        <span className="block text-xs text-gray-500">{formatPrice(o.price)}</span>
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
+              )}
               <div className="flex items-center gap-4">
                 <span className="label !mb-0">Quantity</span>
-                <QuantitySelector
-                  quantity={quantity}
-                  onChange={setQuantity}
-                  max={Math.max(product.stock, 1)}
-                />
+                <QuantitySelector quantity={quantity} onChange={setQuantity} />
               </div>
               <div className="flex flex-wrap gap-3">
                 <button
