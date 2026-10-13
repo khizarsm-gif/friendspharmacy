@@ -57,7 +57,10 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                   {items.map((i) => (
                     <tr key={i.id}>
                       <td className="px-5 py-3">
-                        <span className="block font-medium text-gray-900">{i.productName}</span>
+                        <span className="block font-medium text-gray-900">
+                          {i.productName}
+                          {i.optionLabel && <span className="font-semibold text-brand-700"> ({i.optionLabel})</span>}
+                        </span>
                         {i.sku && <span className="block text-xs text-gray-500">SKU {i.sku}</span>}
                       </td>
                       <td className="px-3 py-3 text-right text-gray-700">{formatPrice(i.unitPrice)}</td>

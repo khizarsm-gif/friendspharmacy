@@ -7,7 +7,7 @@ import type { CheckoutDetails, PlacedOrder } from "@/types";
 
 export interface PlaceOrderInput {
   details: CheckoutDetails;
-  items: { productId: number; quantity: number }[];
+  items: { productId: number; optionLabel?: string | null; quantity: number }[];
 }
 
 export type PlaceOrderResult =
@@ -51,7 +51,13 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
 
   const items = input.items
     .filter((i) => Number.isInteger(i?.productId) && i.productId > 0 && Number.isInteger(i?.quantity))
-    .map((i) => ({ product_id: i.productId, quantity: i.quantity }));
+    // option_label names the pack size (empty = the product's base unit). The database
+    // looks up its price; nothing sent from the browser is trusted for money.
+    .map((i) => ({
+      product_id: i.productId,
+      option_label: typeof i.optionLabel === "string" ? i.optionLabel.trim().slice(0, 80) : "",
+      quantity: i.quantity,
+    }));
   if (items.length === 0 || items.length !== input.items.length || items.length > 50) {
     return { ok: false, error: "Your cart looks empty or invalid. Please review it and try again." };
   }
@@ -87,13 +93,13 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     // Log the error code only: messages for stock errors include a product name, never customer data.
     console.error("[checkout] create_order failed:", error.message);
     const m = error.message;
-    if (m.includes("insufficient_stock")) {
-      return { ok: false, error: "One or more items don't have enough stock for the quantity in your cart. Please reduce the quantity and try again." };
+    if (m.includes("out_of_stock")) {
+      return { ok: false, error: "One of the items in your cart is out of stock. Please remove it and try again, or contact us." };
     }
     if (m.includes("rate_limited")) {
       return { ok: false, error: "Too many orders from this phone number in the last hour. Please call us to place another order." };
     }
-    if (m.includes("unknown_product") || m.includes("prescription_required")) {
+    if (m.includes("unknown_product") || m.includes("unknown_option") || m.includes("prescription_required")) {
       return { ok: false, error: "One of the items in your cart is no longer available online. Please refresh your cart and try again." };
     }
     return { ok: false, error: "We couldn't save your order. Please try again, or contact us directly." };
@@ -104,7 +110,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     subtotal: number;
     delivery_fee: number;
     total: number;
-    items: { name: string; quantity: number; unit_price: number; line_total: number }[];
+    items: { name: string; option_label: string | null; quantity: number; unit_price: number; line_total: number }[];
   };
 
   const placed: PlacedOrder = {
@@ -114,6 +120,7 @@ export async function placeOrder(input: PlaceOrderInput): Promise<PlaceOrderResu
     total: Number(o.total),
     items: o.items.map((i) => ({
       name: i.name,
+      optionLabel: i.option_label ?? null,
       quantity: i.quantity,
       unitPrice: Number(i.unit_price),
       lineTotal: Number(i.line_total),

@@ -21,9 +21,46 @@ interface ParsedFields {
   salePrice: number | null;
   stock: number;
   sku: string;
+  unitLabel: string;
+  packOptions: { label: string; price: number }[];
   featured: boolean;
   prescriptionRequired: boolean;
   image: string;
+}
+
+const MAX_PACK_OPTIONS = 8;
+
+/**
+ * Reads the pack size rows (parallel optionLabel[] / optionPrice[] fields).
+ * Completely empty rows are ignored; half-filled rows are an error.
+ */
+function parsePackOptions(formData: FormData, unitLabel: string): { label: string; price: number }[] {
+  const labels = formData.getAll("optionLabel").map((v) => String(v ?? "").trim());
+  const prices = formData.getAll("optionPrice").map((v) => String(v ?? "").trim());
+  const options: { label: string; price: number }[] = [];
+  const seen = new Set<string>([unitLabel.toLowerCase()]);
+
+  labels.forEach((label, i) => {
+    const priceText = prices[i] ?? "";
+    if (!label && !priceText) return;
+    if (!label) throw new Error("Each pack size needs a name, for example \"Strip of 10\".");
+    if (label.length > 60) throw new Error(`Pack size name "${label.slice(0, 20)}..." is too long (60 characters max).`);
+    const price = Number(priceText);
+    if (!priceText || !Number.isFinite(price) || price < 0) {
+      throw new Error(`Enter a valid price for the pack size "${label}".`);
+    }
+    if (seen.has(label.toLowerCase())) {
+      throw new Error(`The size name "${label}" is used more than once (the single unit name counts too).`);
+    }
+    seen.add(label.toLowerCase());
+    options.push({ label, price });
+  });
+
+  if (options.length > MAX_PACK_OPTIONS) throw new Error(`A product can have at most ${MAX_PACK_OPTIONS} extra pack sizes.`);
+  if (options.length > 0 && !unitLabel) {
+    throw new Error('Name the single unit (for example "Tablet" or "Sachet") when you add pack sizes.');
+  }
+  return options;
 }
 
 function parseProductFields(formData: FormData): ParsedFields {
@@ -52,6 +89,9 @@ function parseProductFields(formData: FormData): ParsedFields {
     throw new Error("Sale price must be lower than the regular price.");
   }
   if (!Number.isInteger(stock) || stock < 0) throw new Error("Stock must be a whole number, 0 or more.");
+  const unitLabel = text("unitLabel");
+  if (unitLabel.length > 40) throw new Error("The single unit name is too long (40 characters max).");
+  const packOptions = parsePackOptions(formData, unitLabel);
   // Only allow our own relative paths or https URLs (blocks javascript:/data: URLs).
   if (image && !image.startsWith("/") && !/^https:\/\//i.test(image)) {
     throw new Error("Image must be an uploaded photo or an https:// link.");
@@ -68,6 +108,8 @@ function parseProductFields(formData: FormData): ParsedFields {
     salePrice,
     stock,
     sku: text("sku"),
+    unitLabel,
+    packOptions,
     featured: formData.get("featured") === "on",
     prescriptionRequired: formData.get("prescriptionRequired") === "on",
     image,
@@ -87,6 +129,8 @@ function toRow(fields: ParsedFields) {
     image: fields.image || PLACEHOLDER_IMAGE,
     stock: fields.stock,
     sku: fields.sku,
+    unit_label: fields.unitLabel || null,
+    pack_options: fields.packOptions,
     featured: fields.featured,
     prescription_required: fields.prescriptionRequired,
   };
@@ -98,6 +142,9 @@ function friendlyDbError(message: string): string {
   }
   if (message.includes("products_category_fkey")) {
     return "That category doesn't exist. Pick one from the dropdown.";
+  }
+  if (message.includes("pack_options") || message.includes("unit_label")) {
+    return "Pack sizes need a database update first. Ask your developer to apply the pack options migration.";
   }
   if (message.includes("row-level security")) {
     return "This account isn't allowed to change products.";

@@ -58,7 +58,7 @@ export async function sendNewOrderEmail(order: PlacedOrder, d: OrderEmailDetails
   const itemsHtml = order.items
     .map(
       (i) =>
-        `<tr><td style="padding:4px 12px 4px 0">${esc(i.name)}</td><td style="padding:4px 12px">x ${i.quantity}</td><td style="padding:4px 0;text-align:right">${esc(formatPrice(i.lineTotal))}</td></tr>`
+        `<tr><td style="padding:4px 12px 4px 0">${esc(i.name)}${i.optionLabel ? ` <strong>(${esc(i.optionLabel)})</strong>` : ""}</td><td style="padding:4px 12px">x ${i.quantity}</td><td style="padding:4px 0;text-align:right">${esc(formatPrice(i.lineTotal))}</td></tr>`
     )
     .join("");
 
@@ -76,7 +76,9 @@ ${adminUrl ? `<p style="margin:16px 0 0"><a href="${esc(adminUrl)}">Open in the 
 
   const text = [
     `New order ${order.orderNumber} (${d.deliveryMethod}, ${d.paymentMethod})`,
-    ...order.items.map((i) => `- ${i.name} x ${i.quantity}  ${formatPrice(i.lineTotal)}`),
+    ...order.items.map(
+      (i) => `- ${i.name}${i.optionLabel ? ` (${i.optionLabel})` : ""} x ${i.quantity}  ${formatPrice(i.lineTotal)}`
+    ),
     `Total: ${formatPrice(order.total)}`,
     `Customer: ${d.customerName}`,
     `Phone: ${d.phone}  WhatsApp: ${d.whatsapp}`,

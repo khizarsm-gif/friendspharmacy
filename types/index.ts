@@ -20,14 +20,30 @@ export interface Product {
   /** Present only when the product is on sale. Must be lower than `price`. */
   salePrice?: number;
   image: string;
+  /**
+   * Availability only: 0 means "out of stock", anything else means available.
+   * Orders do not reduce it.
+   */
   stock: number;
   sku: string;
+  /** Name of the base unit when pack options exist, e.g. "Tablet" or "Sachet". */
+  unitLabel?: string;
+  /**
+   * Extra pack sizes sold for this product (strip, box, ...). The product's own
+   * price is the price of the base unit; these are additional choices.
+   */
+  packOptions: PackOption[];
   featured: boolean;
   prescriptionRequired: boolean;
   /** ISO date string — used for "Newest" sort. */
   createdAt: string;
   /** All demo/seed products are flagged so they're easy to find & replace. */
   isDemo: boolean;
+}
+
+export interface PackOption {
+  label: string;
+  price: number;
 }
 
 /**
@@ -46,6 +62,8 @@ export interface Category {
 
 export interface CartItem {
   productId: number;
+  /** Pack option label, or null/absent for the product's base unit. */
+  optionLabel?: string | null;
   quantity: number;
 }
 
@@ -78,6 +96,8 @@ export interface OrderItem {
   id: number;
   productId: number | null;
   productName: string;
+  /** Pack size ordered (e.g. "Strip of 10"); null for a plain product. */
+  optionLabel: string | null;
   sku: string | null;
   unitPrice: number;
   quantity: number;
@@ -119,5 +139,5 @@ export interface PlacedOrder {
   subtotal: number;
   deliveryFee: number;
   total: number;
-  items: { name: string; quantity: number; unitPrice: number; lineTotal: number }[];
+  items: { name: string; optionLabel: string | null; quantity: number; unitPrice: number; lineTotal: number }[];
 }

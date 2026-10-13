@@ -230,8 +230,13 @@ After placing an order the customer gets an order number and an optional
   pickup (pickup orders only), Completed, Cancelled.
 - Prices and totals are calculated inside the database from the product
   catalog; the browser cannot set them. Pickup orders pay no delivery fee.
-- Product stock is not changed by orders. The database only checks that the
-  listed stock covers the quantity ordered.
+- Product stock is not changed by orders. Stock is availability only: 0 means
+  out of stock (orders are blocked), anything else means available.
+- **Pack sizes:** a product can sell in several sizes (for example Tablet,
+  Strip of 10, Box of 20 strips). The product price is the price of the single
+  unit; extra sizes with their own prices are set in the admin product form
+  ("Sizes"). Needs `supabase/migrations/20261013120000_pack_options.sql`,
+  applied before deploying this code. Orders store the size name with each line.
 - Needs `SUPABASE_SERVICE_ROLE_KEY` set in Vercel (the same key Team
   management already uses). Apply the migration before deploying this code.
 - A phone number can place at most 5 orders per hour.

@@ -1,5 +1,5 @@
 import { getSupabaseClient } from "@/lib/supabase";
-import type { Product } from "@/types";
+import type { PackOption, Product } from "@/types";
 
 /**
  * PRODUCT DATA ACCESS, backed by the Supabase `products` table.
@@ -27,6 +27,18 @@ export interface ProductRow {
   prescription_required: boolean;
   created_at: string;
   is_demo: boolean;
+  unit_label?: string | null;
+  pack_options?: unknown;
+}
+
+/** Reads the pack_options JSON defensively: bad entries are dropped, never thrown on. */
+function parsePackOptions(raw: unknown): PackOption[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((o) => {
+    const label = typeof o?.label === "string" ? o.label.trim() : "";
+    const price = Number(o?.price);
+    return label && Number.isFinite(price) && price >= 0 ? [{ label, price }] : [];
+  });
 }
 
 export function mapRow(row: ProductRow): Product {
@@ -43,6 +55,8 @@ export function mapRow(row: ProductRow): Product {
     image: row.image,
     stock: row.stock,
     sku: row.sku,
+    unitLabel: row.unit_label?.trim() || undefined,
+    packOptions: parsePackOptions(row.pack_options),
     featured: row.featured,
     prescriptionRequired: row.prescription_required,
     createdAt: row.created_at,
