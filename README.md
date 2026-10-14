@@ -240,6 +240,16 @@ After placing an order the customer gets an order number and an optional
 - Needs `SUPABASE_SERVICE_ROLE_KEY` set in Vercel (the same key Team
   management already uses). Apply the migration before deploying this code.
 - A phone number can place at most 5 orders per hour.
+- **Discount vouchers:** owners manage codes at `/admin/vouchers` (one code per
+  customer, percent off, which categories it covers, optional last day, switch
+  off any time). Customers type the code in the Order Summary at checkout. The
+  discount is worked out inside the database, never in the browser: it applies
+  only to the chosen categories and skips items already on sale (unless the
+  code allows them). Free delivery is judged on the amount after the discount.
+  Orders keep the code and the amount (`orders.voucher_code`, `discount_amount`).
+  Needs `supabase/migrations/20261020120000_vouchers.sql`, applied before
+  deploying this code. Code checks are lightly rate limited per server instance,
+  so give customers codes with a random part (the Generate button does this).
 
 ## Admin portal (`/admin`)
 

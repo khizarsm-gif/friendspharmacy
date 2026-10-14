@@ -127,6 +127,9 @@ export interface Order {
   notes: string | null;
   internalNotes: string | null;
   subtotal: number;
+  /** Money taken off by a voucher (0 when none was used). Already excluded from `total`. */
+  discountAmount: number;
+  voucherCode: string | null;
   deliveryFee: number;
   total: number;
   createdAt: string;
@@ -137,6 +140,9 @@ export interface Order {
 export interface PlacedOrder {
   orderNumber: string;
   subtotal: number;
+  /** Voucher discount in rupees (0 when no voucher was used). */
+  discount: number;
+  voucherCode: string | null;
   deliveryFee: number;
   total: number;
   items: { name: string; optionLabel: string | null; quantity: number; unitPrice: number; lineTotal: number }[];

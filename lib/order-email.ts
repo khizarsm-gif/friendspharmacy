@@ -66,7 +66,7 @@ export async function sendNewOrderEmail(order: PlacedOrder, d: OrderEmailDetails
 <h2 style="margin:0 0 8px">New order ${esc(order.orderNumber)}</h2>
 <p style="margin:0 0 12px">${d.deliveryMethod === "pickup" ? "Store pickup" : "Home delivery"} &middot; ${d.paymentMethod === "cod" ? "Cash on delivery" : "Pay at pharmacy"}</p>
 <table style="border-collapse:collapse">${itemsHtml}</table>
-<p style="margin:12px 0 16px">Subtotal ${esc(formatPrice(order.subtotal))} &middot; Delivery ${order.deliveryFee === 0 ? "Free" : esc(formatPrice(order.deliveryFee))} &middot; <strong>Total ${esc(formatPrice(order.total))}</strong></p>
+<p style="margin:12px 0 16px">Subtotal ${esc(formatPrice(order.subtotal))}${order.discount > 0 ? ` &middot; Voucher ${esc(order.voucherCode ?? "")} -${esc(formatPrice(order.discount))}` : ""} &middot; Delivery ${order.deliveryFee === 0 ? "Free" : esc(formatPrice(order.deliveryFee))} &middot; <strong>Total ${esc(formatPrice(order.total))}</strong></p>
 <table style="border-collapse:collapse">
 ${row("Customer", d.customerName)}${row("Phone", d.phone)}${row("WhatsApp", d.whatsapp)}${row("Email", d.email)}
 ${d.deliveryMethod === "delivery" ? row("Address", d.address) + row("City", d.city) : ""}${row("Notes", d.notes)}
@@ -79,6 +79,7 @@ ${adminUrl ? `<p style="margin:16px 0 0"><a href="${esc(adminUrl)}">Open in the 
     ...order.items.map(
       (i) => `- ${i.name}${i.optionLabel ? ` (${i.optionLabel})` : ""} x ${i.quantity}  ${formatPrice(i.lineTotal)}`
     ),
+    order.discount > 0 ? `Voucher ${order.voucherCode ?? ""}: -${formatPrice(order.discount)}` : "",
     `Total: ${formatPrice(order.total)}`,
     `Customer: ${d.customerName}`,
     `Phone: ${d.phone}  WhatsApp: ${d.whatsapp}`,
