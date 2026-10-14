@@ -34,8 +34,9 @@ export const businessConfig = {
 
   // --- Location --------------------------------------------------------------
   address: "03 Tulip Overseas Commercial, Park View City, Lahore, Pakistan",
-  // Optional: paste a Google Maps embed src URL here once you have a real address.
-  googleMapsEmbedUrl: "",
+  // Map shown on the Contact page. Built from the pharmacy name and address, so no API key is needed.
+  googleMapsEmbedUrl:
+    "https://www.google.com/maps?q=Friends+Pharmacy,+03+Tulip+Overseas+Commercial,+Park+View+City,+Lahore&output=embed",
   googleMapsDirectionsUrl: "https://share.google/BwRsqK1RLApC05GVi",
 
   // --- Hours -------------------------------------------------------------
