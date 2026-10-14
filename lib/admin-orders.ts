@@ -26,6 +26,8 @@ interface OrderRow {
   notes: string | null;
   internal_notes: string | null;
   subtotal: string | number;
+  discount_amount: string | number | null;
+  voucher_code: string | null;
   delivery_fee: string | number;
   total: string | number;
   created_at: string;
@@ -48,6 +50,8 @@ function mapOrder(row: OrderRow): Order {
     notes: row.notes,
     internalNotes: row.internal_notes,
     subtotal: Number(row.subtotal),
+    discountAmount: Number(row.discount_amount ?? 0),
+    voucherCode: row.voucher_code,
     deliveryFee: Number(row.delivery_fee),
     total: Number(row.total),
     createdAt: row.created_at,

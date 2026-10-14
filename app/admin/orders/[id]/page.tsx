@@ -76,6 +76,12 @@ export default async function AdminOrderDetailPage({ params }: { params: { id: s
                 <dt>Subtotal</dt>
                 <dd>{formatPrice(order.subtotal)}</dd>
               </div>
+              {order.discountAmount > 0 && (
+                <div className="flex justify-between font-medium text-brand-700">
+                  <dt>Voucher {order.voucherCode ? `(${order.voucherCode})` : ""}</dt>
+                  <dd>-{formatPrice(order.discountAmount)}</dd>
+                </div>
+              )}
               <div className="flex justify-between text-gray-600">
                 <dt>Delivery fee</dt>
                 <dd>{order.deliveryFee === 0 ? "Free" : formatPrice(order.deliveryFee)}</dd>

@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
-  ClipboardList, ExternalLink, KeyRound, LayoutDashboard, LogOut, Menu, Package, Tags, Users, X, type LucideIcon,
+  ClipboardList, ExternalLink, KeyRound, LayoutDashboard, LogOut, Menu, Package, Tag, Tags, Users, X, type LucideIcon,
 } from "lucide-react";
 import { classNames } from "@/lib/utils";
 import { signOut } from "../actions";
@@ -17,6 +17,7 @@ const NAV: { href: string; label: string; icon: LucideIcon; exact?: boolean; own
   { href: "/admin/orders", label: "Orders", icon: ClipboardList },
   { href: "/admin/products", label: "Products", icon: Package },
   { href: "/admin/categories", label: "Categories", icon: Tags },
+  { href: "/admin/vouchers", label: "Vouchers", icon: Tag, ownerOnly: true },
   { href: "/admin/team", label: "Team", icon: Users, ownerOnly: true },
   { href: "/admin/account", label: "My account", icon: KeyRound },
 ];
